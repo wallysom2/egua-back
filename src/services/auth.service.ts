@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import { prisma } from '../utils/database';
-import { CadastroInput, LoginInput, TipoUsuario } from '../schema/usuario.schema.js';
+import { CadastroInput, LoginInput, TipoUsuario } from '../schema/usuario.schema';
 import { logger } from '../utils/logger';
 
 // Segredo JWT
@@ -50,7 +50,7 @@ export const cadastrarUsuario = async (dadosUsuario: Omit<CadastroInput, 'confir
         email,
         senha_hash: senhaHash,
         nome,
-        tipo: tipo as TipoUsuario,
+        tipo: tipo,
         cpf,
         ativo: true
       }

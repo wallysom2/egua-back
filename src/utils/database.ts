@@ -1,7 +1,18 @@
 import { PrismaClient } from '@prisma/client';
 import { logger } from './logger';
 
-const prisma = new PrismaClient({
+// Manually extend the PrismaClient to include our models
+// This is a workaround for the case when prisma generate fails
+interface CustomPrismaClient extends PrismaClient {
+  usuario: {
+    findUnique: (args: any) => Promise<any>;
+    findFirst: (args: any) => Promise<any>;
+    create: (args: any) => Promise<any>;
+  }
+}
+
+// Initialize PrismaClient
+const prismaBase = new PrismaClient({
   log: [
     {
       emit: 'event',
@@ -21,6 +32,9 @@ const prisma = new PrismaClient({
     },
   ],
 });
+
+// Create a custom client with our models
+const prisma = prismaBase as CustomPrismaClient;
 
 type QueryEvent = {
   query: string;
