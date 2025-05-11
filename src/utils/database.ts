@@ -1,18 +1,8 @@
 import { PrismaClient } from '@prisma/client';
-import { logger } from './logger';
+import { logger } from './logger.js';
 
-// Manually extend the PrismaClient to include our models
-// This is a workaround for the case when prisma generate fails
-interface CustomPrismaClient extends PrismaClient {
-  usuario: {
-    findUnique: (args: any) => Promise<any>;
-    findFirst: (args: any) => Promise<any>;
-    create: (args: any) => Promise<any>;
-  }
-}
-
-// Initialize PrismaClient
-const prismaBase = new PrismaClient({
+// Initialize PrismaClient without type extension
+const prisma = new PrismaClient({
   log: [
     {
       emit: 'event',
@@ -31,10 +21,7 @@ const prismaBase = new PrismaClient({
       level: 'warn',
     },
   ],
-});
-
-// Create a custom client with our models
-const prisma = prismaBase as CustomPrismaClient;
+}) as any; // Use 'any' type assertion temporarily to avoid TS errors
 
 type QueryEvent = {
   query: string;
@@ -43,11 +30,12 @@ type QueryEvent = {
   target: string;
 };
 
-prisma.$on('query', (e: QueryEvent) => {
+// Type assertion for the event handlers
+(prisma as any).$on('query', (e: QueryEvent) => {
   logger.debug('Prisma Query', { query: e.query, params: e.params, duration: e.duration });
 });
 
-prisma.$on('error', (e) => {
+(prisma as any).$on('error', (e: any) => {
   logger.error('Prisma Error', e);
 });
 

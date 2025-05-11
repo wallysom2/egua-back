@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-import { prisma } from '../utils/database';
-import { CadastroInput, LoginInput, TipoUsuario } from '../schema/usuario.schema';
-import { logger } from '../utils/logger';
+import { prisma } from '../utils/database.js';
+import { CadastroInput, LoginInput, TipoUsuario } from '../schema/usuario.schema.js';
+import { logger } from '../utils/logger.js';
 
 // Segredo JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';

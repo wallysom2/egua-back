@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { cadastrarUsuario, loginUsuario } from '../services/auth.service';
-import { logger } from '../utils/logger';
-import { CadastroInput, LoginInput } from '../schema/usuario.schema';
+import { cadastrarUsuario, loginUsuario } from '../services/auth.service.js';
+import { logger } from '../utils/logger.js';
+import { CadastroInput, LoginInput } from '../schema/usuario.schema.js';
 
 export const cadastro = async (req: Request, res: Response): Promise<void> => {
   try {

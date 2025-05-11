@@ -1,30 +1,28 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodType, ZodError } from 'zod';
-import { logger } from '../utils/logger';
+import { AnyZodObject, ZodError, z } from 'zod';
+import { logger } from '../utils/logger.js';
 
-export const validateRequest = (schema: ZodType<any, any, any>) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+export const validateRequest = (schema: z.ZodSchema) => 
+  (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse(req.body);
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        logger.error('Validation error', error.errors);
+        logger.warn('Erro de validação:', error.errors);
         res.status(400).json({
           success: false,
-          message: 'Falha na validação',
-          errors: error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message
-          }))
+          message: 'Dados inválidos',
+          errors: error.errors
         });
-      } else {
-        logger.error('Unexpected validation error', error);
-        res.status(500).json({
-          success: false,
-          message: 'Erro interno do servidor'
-        });
+        return;
       }
+      
+      logger.error('Erro desconhecido na validação:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'Erro de validação'
+      });
+      return;
     }
-  };
-}; 
+  }; 

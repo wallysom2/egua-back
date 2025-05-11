@@ -1,7 +1,7 @@
-import { app } from './app';
+import { app } from './app.js';
 import dotenv from 'dotenv';
-import { connectDatabase } from './utils/database';
-import { logger } from './utils/logger';
+import { connectDatabase } from './utils/database.js';
+import { logger } from './utils/logger.js';
 import chalk from 'chalk';
 
 dotenv.config();
