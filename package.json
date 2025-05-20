@@ -18,6 +18,7 @@
   "dependencies": {
     "@prisma/client": "^6.7.0",
     "@types/cors": "^2.8.17",
+    "@types/uuid": "^10.0.0",
     "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
     "chalk": "^5.4.1",
@@ -30,6 +31,7 @@
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
+    "uuid": "^11.1.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {

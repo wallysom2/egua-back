@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 
 import { prisma } from '../utils/database.js';
 import { CadastroInput, LoginInput, TipoUsuario } from '../schema/usuario.schema.js';
@@ -15,21 +16,9 @@ const SALT_ROUNDS = 10;
  */
 export const cadastrarUsuario = async (dadosUsuario: Omit<CadastroInput, 'confirmarSenha'>) => {
   try {
-    const { email, senha, nome, tipo, cpf } = dadosUsuario;
+    const { email, senha, nome, tipo } = dadosUsuario;
 
-    // Verificar se usuário já existe por CPF (campo único no schema)
-    const usuarioExistente = await prisma.usuario.findUnique({
-      where: { cpf }
-    });
-
-    if (usuarioExistente) {
-      return {
-        success: false,
-        message: 'Usuário com este CPF já existe'
-      };
-    }
-
-    // Verificar se email já está em uso (busca não única)
+    // Verificar se email já está em uso
     const emailExistente = await prisma.usuario.findFirst({
       where: { email }
     });
@@ -47,11 +36,11 @@ export const cadastrarUsuario = async (dadosUsuario: Omit<CadastroInput, 'confir
     // Criar novo usuário
     const novoUsuario = await prisma.usuario.create({
       data: {
+        id: uuidv4(),
         email,
         senha_hash: senhaHash,
         nome,
         tipo: tipo,
-        cpf,
         ativo: true
       }
     });

@@ -7,20 +7,152 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Usuario {
-  id         String      @id @default(uuid())
-  email      String
-  senha_hash String
-  nome       String
-  cpf        String      @unique
-  tipo       TipoUsuario
-  ativo      Boolean     @default(true)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+model app {
+  id      String  @id @db.Char(36)
+  nome    String  @unique(map: "nome") @db.VarChar(100)
+  api_key String  @unique(map: "api_key") @db.Char(36)
+  ativo   Boolean @default(true)
 }
 
-enum TipoUsuario {
+model conteudo {
+  id            Int                    @id @default(autoincrement())
+  linguagem_id  Int
+  titulo        String                 @db.VarChar(255)
+  corpo         String                 @db.LongText
+  nivel_leitura conteudo_nivel_leitura @default(basico)
+  linguagem     linguagem              @relation(fields: [linguagem_id], references: [id], map: "conteudo_ibfk_1")
+  questao       questao[]
+
+  @@index([linguagem_id], map: "linguagem_id")
+}
+
+model exercicio {
+  id                Int                 @id @default(autoincrement())
+  titulo            String              @db.VarChar(255)
+  tipo              exercicio_tipo      @default(pratico)
+  linguagem_id      Int
+  linguagem         linguagem           @relation(fields: [linguagem_id], references: [id], map: "exercicio_ibfk_1")
+  exercicio_questao exercicio_questao[]
+  user_exercicio    user_exercicio[]
+
+  @@index([linguagem_id], map: "linguagem_id")
+}
+
+model exercicio_questao {
+  exercicio_id Int
+  questao_id   Int
+  ordem        Int       @default(0)
+  exercicio    exercicio @relation(fields: [exercicio_id], references: [id], onDelete: Cascade, map: "exercicio_questao_ibfk_1")
+  questao      questao   @relation(fields: [questao_id], references: [id], map: "exercicio_questao_ibfk_2")
+
+  @@id([exercicio_id, questao_id])
+  @@index([questao_id], map: "questao_id")
+}
+
+model ia_criterio {
+  id           Int            @id @default(autoincrement())
+  nome         String         @unique(map: "nome") @db.VarChar(100)
+  peso         Decimal        @default(1.00) @db.Decimal(5, 2)
+  ia_evaluacao ia_evaluacao[]
+}
+
+model ia_evaluacao {
+  id               String        @id @db.Char(36)
+  user_resposta_id String        @db.Char(36)
+  criterio_id      Int
+  aprovado         Boolean
+  feedback         String?       @db.Text
+  avaliado_em      DateTime      @default(now())
+  user_resposta    user_resposta @relation(fields: [user_resposta_id], references: [id], onDelete: Cascade, map: "ia_evaluacao_ibfk_1")
+  ia_criterio      ia_criterio   @relation(fields: [criterio_id], references: [id], map: "ia_evaluacao_ibfk_2")
+
+  @@index([criterio_id], map: "criterio_id")
+  @@index([user_resposta_id], map: "user_resposta_id")
+}
+
+model linguagem {
+  id        Int         @id @default(autoincrement())
+  nome      String      @unique(map: "nome") @db.VarChar(100)
+  conteudo  conteudo[]
+  exercicio exercicio[]
+}
+
+model questao {
+  id                Int                 @id @default(autoincrement())
+  conteudo_id       Int
+  enunciado         String              @db.LongText
+  nivel             questao_nivel       @default(facil)
+  exercicio_questao exercicio_questao[]
+  conteudo          conteudo            @relation(fields: [conteudo_id], references: [id], map: "questao_ibfk_1")
+  user_resposta     user_resposta[]
+
+  @@index([conteudo_id], map: "conteudo_id")
+}
+
+model user_exercicio {
+  id            String                @id @db.Char(36)
+  usuario_id    String                @db.Char(36)
+  exercicio_id  Int
+  iniciado_em   DateTime              @default(now())
+  finalizado_em DateTime?
+  status        user_exercicio_status @default(em_andamento)
+  usuario       usuario               @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "user_exercicio_ibfk_1")
+  exercicio     exercicio             @relation(fields: [exercicio_id], references: [id], map: "user_exercicio_ibfk_2")
+  user_resposta user_resposta[]
+
+  @@index([exercicio_id], map: "exercicio_id")
+  @@index([usuario_id], map: "usuario_id")
+}
+
+model user_resposta {
+  id                String         @id @db.Char(36)
+  user_exercicio_id String         @db.Char(36)
+  questao_id        Int
+  resposta          String         @db.LongText
+  submetido_em      DateTime       @default(now())
+  ia_evaluacao      ia_evaluacao[]
+  user_exercicio    user_exercicio @relation(fields: [user_exercicio_id], references: [id], onDelete: Cascade, map: "user_resposta_ibfk_1")
+  questao           questao        @relation(fields: [questao_id], references: [id], map: "user_resposta_ibfk_2")
+
+  @@index([questao_id], map: "questao_id")
+  @@index([user_exercicio_id], map: "user_exercicio_id")
+}
+
+model usuario {
+  id             String           @id @db.Char(36)
+  nome           String           @db.VarChar(255)
+  email          String           @unique(map: "email") @db.VarChar(255)
+  senha_hash     String           @db.VarChar(255)
+  tipo           usuario_tipo
+  ativo          Boolean          @default(true)
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @default(now())
+  user_exercicio user_exercicio[]
+}
+
+enum exercicio_tipo {
+  pratico
+  quiz
+}
+
+enum questao_nivel {
+  facil
+  medio
+  dificil
+}
+
+enum conteudo_nivel_leitura {
+  basico
+  intermediario
+}
+
+enum usuario_tipo {
   professor
   aluno
   desenvolvedor
+}
+
+enum user_exercicio_status {
+  em_andamento
+  concluido
 }
