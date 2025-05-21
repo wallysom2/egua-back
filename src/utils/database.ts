@@ -31,9 +31,7 @@ type QueryEvent = {
 };
 
 // Type assertion for the event handlers
-(prisma as any).$on('query', (e: QueryEvent) => {
-  logger.debug('Prisma Query', { query: e.query, params: e.params, duration: e.duration });
-});
+
 
 (prisma as any).$on('error', (e: any) => {
   logger.error('Prisma Error', e);
