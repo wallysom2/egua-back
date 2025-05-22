@@ -34,7 +34,9 @@ export async function criarExercicio(req: Request, res: Response) {
   try {
     const exercicio = await prisma.exercicio.create({
       data: {
-        ...dadosExercicio,
+        titulo: dadosExercicio.titulo,
+        tipo: dadosExercicio.tipo,
+        linguagem_id: dadosExercicio.linguagem_id,
         exercicio_questao: {
           create: questoes.map(q => ({ questao_id: q.questao_id, ordem: q.ordem }))
         }
@@ -59,7 +61,9 @@ export async function atualizarExercicio(req: Request, res: Response) {
     const exercicio = await prisma.exercicio.update({
       where: { id: Number(id) },
       data: {
-        ...dadosExercicio,
+        titulo: dadosExercicio.titulo,
+        tipo: dadosExercicio.tipo,
+        linguagem_id: dadosExercicio.linguagem_id,
         exercicio_questao: {
           create: questoes.map(q => ({ questao_id: q.questao_id, ordem: q.ordem }))
         }

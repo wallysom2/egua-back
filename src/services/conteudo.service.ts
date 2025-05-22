@@ -7,7 +7,9 @@ export async function listarConteudos() {
 }
 
 export async function buscarConteudoPorId(id: number) {
-  return await prisma.conteudo.findUnique({ where: { id } });
+  return await prisma.conteudo.findUnique({
+    where: { id: id }
+  });
 }
 
 export async function criarConteudo(data: ConteudoInput) {
