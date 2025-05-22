@@ -8,14 +8,13 @@ import {
   atualizarLinguagem,
   deletarLinguagem
 } from '../controllers/linguagem.controller.js';
-import { autorizarProfessor } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
 router.get('/', listarLinguagens as RequestHandler);
 router.get('/:id', buscarLinguagemPorId as RequestHandler);
-router.post('/', [autorizarProfessor, validateRequest(linguagemSchema), criarLinguagem] as RequestHandler[]);
-router.put('/:id', [autorizarProfessor, validateRequest(linguagemSchema), atualizarLinguagem] as RequestHandler[]);
-router.delete('/:id', [autorizarProfessor, deletarLinguagem] as RequestHandler[]);
+router.post('/', [ validateRequest(linguagemSchema), criarLinguagem] as RequestHandler[]);
+router.put('/:id', [ validateRequest(linguagemSchema), atualizarLinguagem] as RequestHandler[]);
+router.delete('/:id', [ deletarLinguagem] as RequestHandler[]);
 
 export { router as linguagemRoutes }; 

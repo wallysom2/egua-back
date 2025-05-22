@@ -8,14 +8,13 @@ import {
   atualizarIaCriterio,
   deletarIaCriterio
 } from '../controllers/iaCriterio.controller.js';
-import { autorizarProfessor } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/', [autorizarProfessor, listarIaCriterios] as RequestHandler[]);
-router.get('/:id', [autorizarProfessor, buscarIaCriterioPorId] as RequestHandler[]);
-router.post('/', [autorizarProfessor, validateRequest(iaCriterioSchema), criarIaCriterio] as RequestHandler[]);
-router.put('/:id', [autorizarProfessor, validateRequest(iaCriterioSchema), atualizarIaCriterio] as RequestHandler[]);
-router.delete('/:id', [autorizarProfessor, deletarIaCriterio] as RequestHandler[]);
+router.get('/', [ listarIaCriterios] as RequestHandler[]);
+router.get('/:id', [ buscarIaCriterioPorId] as RequestHandler[]);
+router.post('/', [ validateRequest(iaCriterioSchema), criarIaCriterio] as RequestHandler[]);
+router.put('/:id', [ validateRequest(iaCriterioSchema), atualizarIaCriterio] as RequestHandler[]);
+router.delete('/:id', [ deletarIaCriterio] as RequestHandler[]);
 
 export { router as iaCriterioRoutes }; 
