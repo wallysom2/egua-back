@@ -79,11 +79,15 @@ model linguagem {
 
 model questao {
   id                Int                 @id @default(autoincrement())
-  conteudo_id       Int
+  conteudo_id       Int?
   enunciado         String              @db.LongText
   nivel             questao_nivel       @default(facil)
+  exemplo_resposta  String?             @db.LongText
+  opcoes            Json?
+  resposta_correta  String?             @db.VarChar(255)
+  tipo              questao_tipo        @default(quiz)
   exercicio_questao exercicio_questao[]
-  conteudo          conteudo            @relation(fields: [conteudo_id], references: [id], map: "questao_ibfk_1")
+  conteudo          conteudo?           @relation(fields: [conteudo_id], references: [id], map: "questao_ibfk_1")
   user_resposta     user_resposta[]
 
   @@index([conteudo_id], map: "conteudo_id")
@@ -155,4 +159,9 @@ enum usuario_tipo {
 enum user_exercicio_status {
   em_andamento
   concluido
+}
+
+enum questao_tipo {
+  quiz
+  programacao
 }
