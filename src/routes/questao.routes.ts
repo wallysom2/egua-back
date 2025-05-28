@@ -8,14 +8,13 @@ import {
   atualizarQuestao,
   deletarQuestao
 } from '../controllers/questao.controller.js';
-import { autorizarProfessor } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
 router.get('/', listarQuestoes as RequestHandler); // Adicionar ?conteudoId=X para filtrar
 router.get('/:id', buscarQuestaoPorId as RequestHandler);
-router.post('/', [autorizarProfessor, validateRequest(questaoSchema), criarQuestao] as RequestHandler[]);
-router.put('/:id', [autorizarProfessor, validateRequest(questaoSchema), atualizarQuestao] as RequestHandler[]);
-router.delete('/:id', [autorizarProfessor, deletarQuestao] as RequestHandler[]);
+router.post('/', validateRequest(questaoSchema), criarQuestao as RequestHandler);
+router.put('/:id', validateRequest(questaoSchema), atualizarQuestao as RequestHandler);
+router.delete('/:id', deletarQuestao as RequestHandler);
 
 export { router as questaoRoutes }; 
