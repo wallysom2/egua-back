@@ -29,7 +29,6 @@ model conteudo {
 model exercicio {
   id                Int                 @id @default(autoincrement())
   titulo            String              @db.VarChar(255)
-  tipo              exercicio_tipo      @default(pratico)
   linguagem_id      Int
   linguagem         linguagem           @relation(fields: [linguagem_id], references: [id], map: "exercicio_ibfk_1")
   exercicio_questao exercicio_questao[]
@@ -132,11 +131,6 @@ model usuario {
   created_at     DateTime         @default(now())
   updated_at     DateTime         @default(now())
   user_exercicio user_exercicio[]
-}
-
-enum exercicio_tipo {
-  pratico
-  quiz
 }
 
 enum questao_nivel {
