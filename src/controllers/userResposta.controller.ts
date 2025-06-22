@@ -2,14 +2,20 @@ import { Request, Response } from 'express';
 import { prisma } from '../utils/database.js';
 import { SubmeterRespostaInput } from '../schema/userResposta.schema.js';
 import { v4 as uuidv4 } from 'uuid';
+import * as geminiService from '../services/gemini.service.js';
+import { logger } from '../utils/logger.js';
 
 // Extender a interface Request para incluir o usuário autenticado
 interface AuthenticatedRequest extends Request {
   usuario?: { usuarioId: string; tipo: string };
 }
 
-export async function submeterResposta(req: AuthenticatedRequest, res: Response) {
-  const { user_exercicio_id, questao_id, resposta } = req.body as SubmeterRespostaInput;
+export async function submeterResposta(
+  req: AuthenticatedRequest,
+  res: Response,
+) {
+  const { user_exercicio_id, questao_id, resposta } =
+    req.body as SubmeterRespostaInput;
   const usuarioId = req.usuario?.usuarioId;
 
   if (!usuarioId) {
@@ -23,23 +29,28 @@ export async function submeterResposta(req: AuthenticatedRequest, res: Response)
         id: user_exercicio_id,
         usuario_id: usuarioId,
         // status: 'em_andamento' // Opcional: permitir submeter apenas se em andamento
-      }
+      },
     });
 
     if (!progressoExercicio) {
-      return res.status(404).json({ message: 'Progresso do exercício não encontrado ou não pertence ao usuário' });
+      return res.status(404).json({
+        message:
+          'Progresso do exercício não encontrado ou não pertence ao usuário',
+      });
     }
-    
+
     // Verificar se a questão pertence ao exercício
     const questaoNoExercicio = await prisma.exercicio_questao.findFirst({
-        where: {
-            exercicio_id: progressoExercicio.exercicio_id,
-            questao_id: questao_id
-        }
+      where: {
+        exercicio_id: progressoExercicio.exercicio_id,
+        questao_id: questao_id,
+      },
     });
 
     if (!questaoNoExercicio) {
-        return res.status(400).json({ message: 'Questão não faz parte do exercício informado' });
+      return res
+        .status(400)
+        .json({ message: 'Questão não faz parte do exercício informado' });
     }
 
     // Verificar se já existe uma resposta para essa questão nesse progresso
@@ -50,13 +61,31 @@ export async function submeterResposta(req: AuthenticatedRequest, res: Response)
         id: uuidv4(),
         user_exercicio_id,
         questao_id,
-        resposta
+        resposta,
         // ia_evaluacao será preenchida depois
-      }
+      },
     });
 
-    // AQUI seria o ponto para chamar a IA para avaliação assíncrona
-    // Ex: chamarServicoAvaliacaoIA(novaResposta.id, resposta);
+    // Verificar se é uma questão de programação para análise automática
+    const questao = await prisma.questao.findUnique({
+      where: { id: questao_id },
+      select: { tipo: true, enunciado: true, exemplo_resposta: true },
+    });
+
+    if (questao?.tipo === 'programacao') {
+      // Processar análise com Gemini de forma assíncrona
+      processarAnaliseProgramacao(
+        novaResposta.id,
+        questao.enunciado,
+        resposta,
+        questao.exemplo_resposta,
+      ).catch((error) => {
+        logger.error('Erro na análise assíncrona', {
+          respostaId: novaResposta.id,
+          error,
+        });
+      });
+    }
 
     res.status(201).json(novaResposta);
   } catch (error) {
@@ -65,7 +94,85 @@ export async function submeterResposta(req: AuthenticatedRequest, res: Response)
   }
 }
 
-export async function listarRespostasPorProgresso(req: AuthenticatedRequest, res: Response) {
+export async function obterAnaliseResposta(
+  req: AuthenticatedRequest,
+  res: Response,
+) {
+  const { respostaId } = req.params;
+  const usuarioId = req.usuario?.usuarioId;
+
+  if (!usuarioId) {
+    return res.status(403).json({ message: 'Usuário não autenticado' });
+  }
+
+  try {
+    // Verificar se a resposta pertence ao usuário
+    const resposta = await prisma.user_resposta.findFirst({
+      where: {
+        id: respostaId,
+        user_exercicio: { usuario_id: usuarioId },
+      },
+      include: {
+        questao: { select: { enunciado: true, tipo: true } },
+        ia_evaluacao: {
+          include: { ia_criterio: true },
+          orderBy: { avaliado_em: 'desc' },
+        },
+      },
+    });
+
+    if (!resposta) {
+      return res.status(404).json({
+        message: 'Resposta não encontrada ou não pertence ao usuário',
+      });
+    }
+
+    // Se não há análise ainda (questão não é de programação ou ainda processando)
+    if (resposta.ia_evaluacao.length === 0) {
+      return res.json({
+        resposta: resposta.resposta,
+        questao: resposta.questao,
+        analise_disponivel: false,
+        status:
+          resposta.questao.tipo === 'programacao'
+            ? 'processando'
+            : 'nao_aplicavel',
+      });
+    }
+
+    // Retornar análise completa
+    const analiseCompleta = {
+      resposta: resposta.resposta,
+      questao: resposta.questao,
+      analise_disponivel: true,
+      analises: resposta.ia_evaluacao.map((avaliacao: any) => ({
+        criterio: avaliacao.ia_criterio.nome,
+        peso: avaliacao.ia_criterio.peso,
+        aprovado: avaliacao.aprovado,
+        feedback: avaliacao.feedback,
+        avaliado_em: avaliacao.avaliado_em,
+      })),
+      resultado_geral: {
+        aprovado: resposta.ia_evaluacao.every(
+          (avaliacao: any) => avaliacao.aprovado,
+        ),
+        pontuacao_media: calcularPontuacaoMedia(resposta.ia_evaluacao),
+      },
+    };
+
+    res.json(analiseCompleta);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: 'Erro ao obter análise da resposta', error });
+  }
+}
+
+export async function listarRespostasPorProgresso(
+  req: AuthenticatedRequest,
+  res: Response,
+) {
   const { userExercicioId } = req.params;
   const usuarioId = req.usuario?.usuarioId;
 
@@ -76,20 +183,139 @@ export async function listarRespostasPorProgresso(req: AuthenticatedRequest, res
   try {
     // Verificar se o user_exercicio_id pertence ao usuário logado
     const progressoExercicio = await prisma.user_exercicio.findFirst({
-      where: { id: userExercicioId, usuario_id: usuarioId }
+      where: { id: userExercicioId, usuario_id: usuarioId },
     });
 
     if (!progressoExercicio) {
-      return res.status(404).json({ message: 'Progresso do exercício não encontrado ou não pertence ao usuário' });
+      return res.status(404).json({
+        message:
+          'Progresso do exercício não encontrado ou não pertence ao usuário',
+      });
     }
 
     const respostas = await prisma.user_resposta.findMany({
       where: { user_exercicio_id: userExercicioId },
-      include: { questao: true, ia_evaluacao: { include: { ia_criterio: true } } },
-      orderBy: { submetido_em: 'asc' }
+      include: {
+        questao: true,
+        ia_evaluacao: { include: { ia_criterio: true } },
+      },
+      orderBy: { submetido_em: 'asc' },
     });
     res.json(respostas);
   } catch (error) {
     res.status(500).json({ message: 'Erro ao listar respostas', error });
   }
-} 
+}
+
+// Função para processar análise de programação de forma assíncrona
+async function processarAnaliseProgramacao(
+  respostaId: string,
+  enunciado: string,
+  resposta: string,
+  exemploResposta?: string | null,
+) {
+  try {
+    logger.info('Iniciando análise de programação', { respostaId });
+
+    // Chamar o serviço Gemini para análise
+    const analise = await geminiService.analisarRespostaProgramacao(
+      enunciado,
+      resposta,
+      exemploResposta || undefined,
+    );
+
+    // Buscar ou criar critérios de avaliação
+    const criterios = await obterCriteriosAvaliacao();
+
+    // Salvar as avaliações no banco
+    for (const criterio of criterios) {
+      await prisma.ia_evaluacao.create({
+        data: {
+          id: uuidv4(),
+          user_resposta_id: respostaId,
+          criterio_id: criterio.id,
+          aprovado: analise.aprovado,
+          feedback: `${analise.feedback}\n\nSugestões: ${analise.sugestoes.join(
+            ', ',
+          )}`,
+          avaliado_em: new Date(),
+        },
+      });
+    }
+
+    logger.info('Análise de programação concluída', {
+      respostaId,
+      aprovado: analise.aprovado,
+      pontuacao: analise.pontuacao,
+    });
+  } catch (error) {
+    logger.error('Erro ao processar análise de programação', {
+      respostaId,
+      error,
+    });
+
+    // Em caso de erro, criar uma avaliação indicando falha
+    const criterios = await obterCriteriosAvaliacao();
+    if (criterios.length > 0) {
+      await prisma.ia_evaluacao.create({
+        data: {
+          id: uuidv4(),
+          user_resposta_id: respostaId,
+          criterio_id: criterios[0].id,
+          aprovado: false,
+          feedback:
+            'Erro na análise automática. Resposta será revisada manualmente.',
+          avaliado_em: new Date(),
+        },
+      });
+    }
+  }
+}
+
+// Função para obter ou criar critérios de avaliação padrão
+async function obterCriteriosAvaliacao() {
+  const criteriosExistentes = await prisma.ia_criterio.findMany();
+
+  if (criteriosExistentes.length === 0) {
+    // Criar critérios padrão se não existirem
+    const criteriosPadrao = [
+      { nome: 'Correção do Código', peso: 40 },
+      { nome: 'Boas Práticas', peso: 30 },
+      { nome: 'Eficiência', peso: 20 },
+      { nome: 'Legibilidade', peso: 10 },
+    ];
+
+    const criteriosCriados = [];
+    for (const criterio of criteriosPadrao) {
+      const novoCriterio = await prisma.ia_criterio.create({
+        data: {
+          nome: criterio.nome,
+          peso: criterio.peso,
+        },
+      });
+      criteriosCriados.push(novoCriterio);
+    }
+
+    return criteriosCriados;
+  }
+
+  return criteriosExistentes;
+}
+
+// Função auxiliar para calcular pontuação média ponderada
+function calcularPontuacaoMedia(avaliacoes: any[]): number {
+  if (avaliacoes.length === 0) return 0;
+
+  let somaTotal = 0;
+  let pesoTotal = 0;
+
+  for (const avaliacao of avaliacoes) {
+    const peso = avaliacao.ia_criterio.peso;
+    const pontos = avaliacao.aprovado ? 100 : 0;
+
+    somaTotal += pontos * peso;
+    pesoTotal += peso;
+  }
+
+  return pesoTotal > 0 ? Math.round((somaTotal / pesoTotal) * 100) / 100 : 0;
+}
