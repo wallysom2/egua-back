@@ -8,14 +8,14 @@ import { exercicioRoutes } from './routes/exercicio.routes.js';
 import { userExercicioRoutes } from './routes/userExercicio.routes.js';
 import { userRespostaRoutes } from './routes/userResposta.routes.js';
 import { iaCriterioRoutes } from './routes/iaCriterio.routes.js';
-//import { autenticar } from './middlewares/auth.middleware.js';
+import { autenticar } from './middlewares/auth.middleware.js';
 
 const app = express();
 
 // Configuração do CORS
 app.use(cors());
 
-app.use(express.json({limit: '50mb'})); // Aumentar limite para imagens base64
+app.use(express.json({ limit: '50mb' })); // Aumentar limite para imagens base64
 app.use(express.urlencoded({ extended: true }));
 
 // Rotas públicas (não precisam de autenticação)
@@ -36,4 +36,4 @@ app.get('/', (req: Request, res: Response) => {
   res.status(200).json({ status: '🎯 Servidor rodando normalmente' });
 });
 
-export { app }; 
+export { app };
