@@ -308,9 +308,9 @@ export async function listarExerciciosConcluidos(usuarioId: string) {
     },
   });
 
-  return exerciciosConcluidos.map((exercicio) => {
+  return exerciciosConcluidos.map((exercicio: any) => {
     const totalQuestoes = exercicio.user_resposta.length;
-    const respostasAprovadas = exercicio.user_resposta.filter((resposta) =>
+    const respostasAprovadas = exercicio.user_resposta.filter((resposta: any) =>
       resposta.ia_evaluacao.some((avaliacao: any) => avaliacao.aprovado),
     ).length;
 
@@ -343,20 +343,20 @@ export async function obterResumoProgresso(usuarioId: string) {
 
   const totalExercicios = todosProgressos.length;
   const exerciciosConcluidos = todosProgressos.filter(
-    (p) => p.status === 'concluido',
+    (p: any) => p.status === 'concluido',
   ).length;
   const exerciciosEmAndamento = todosProgressos.filter(
-    (p) => p.status === 'em_andamento',
+    (p: any) => p.status === 'em_andamento',
   ).length;
 
   const totalRespostas = todosProgressos.reduce(
-    (acc, progresso) => acc + progresso.user_resposta.length,
+    (acc: number, progresso: any) => acc + progresso.user_resposta.length,
     0,
   );
-  const totalRespostasAprovadas = todosProgressos.reduce((acc, progresso) => {
+  const totalRespostasAprovadas = todosProgressos.reduce((acc: number, progresso: any) => {
     return (
       acc +
-      progresso.user_resposta.filter((resposta) =>
+      progresso.user_resposta.filter((resposta: any) =>
         resposta.ia_evaluacao.some((avaliacao: any) => avaliacao.aprovado),
       ).length
     );
