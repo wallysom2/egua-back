@@ -10,13 +10,18 @@ export interface AnaliseResultado {
   sugestoes: string[];
 }
 
+export interface MensagemPersonalizada {
+  mensagem: string;
+  tom: 'parabenizacao' | 'orientacao';
+}
+
 export async function analisarRespostaProgramacao(
   enunciado: string,
   resposta: string,
   exemploResposta?: string,
 ): Promise<AnaliseResultado> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = construirPromptAnalise(enunciado, resposta, exemploResposta);
 
@@ -106,6 +111,108 @@ function parseResposta(texto: string): AnaliseResultado {
         'Erro na análise automática. Resposta será revisada manualmente.',
       pontuacao: 0,
       sugestoes: ['Revisar sintaxe', 'Verificar lógica'],
+    };
+  }
+}
+
+export async function gerarMensagemPersonalizadaIdoso(
+  aprovado: boolean,
+  feedback: string,
+  enunciado: string,
+  resposta: string,
+): Promise<MensagemPersonalizada> {
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const prompt = construirPromptMensagemIdoso(aprovado, feedback, enunciado, resposta);
+
+    logger.info('Gerando mensagem personalizada para idoso', {
+      aprovado,
+      enunciado: enunciado.substring(0, 50),
+    });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    const mensagem = parseMensagemPersonalizada(text);
+
+    logger.info('Mensagem personalizada gerada', {
+      tom: mensagem.tom,
+      tamanho: mensagem.mensagem.length,
+    });
+
+    return mensagem;
+  } catch (error) {
+    logger.error('Erro ao gerar mensagem personalizada', error);
+    
+    // Fallback: mensagem padrão baseada no resultado
+    return {
+      mensagem: aprovado 
+        ? "Parabéns! Você acertou o exercício. Continue assim, você está indo muito bem!" 
+        : "Não desanime! Vamos tentar novamente. Revise o conteúdo e tente uma abordagem diferente.",
+      tom: aprovado ? 'parabenizacao' : 'orientacao'
+    };
+  }
+}
+
+function construirPromptMensagemIdoso(
+  aprovado: boolean,
+  feedback: string,
+  enunciado: string,
+  resposta: string,
+): string {
+  const prompt = `
+Você é um professor especializado em ensinar programação para idosos de forma carinhosa e paciente.
+
+CONTEXTO:
+- O aluno é uma pessoa idosa aprendendo programação
+- ${aprovado ? 'A resposta está CORRETA' : 'A resposta está INCORRETA'}
+- Exercício: ${enunciado}
+- Resposta do aluno: ${resposta}
+- Análise técnica: ${feedback}
+
+INSTRUÇÕES:
+1. Use linguagem simples, carinhosa e encorajadora
+2. Evite termos técnicos complexos
+3. ${aprovado ? 'PARABENIZE o aluno pelo acerto de forma calorosa' : 'DÊ ORIENTAÇÃO sucinta sobre como melhorar'}
+4. Mantenha a mensagem entre 50-150 palavras
+5. Use tratamento respeitoso e afetuoso
+6. ${aprovado ? 'Incentive a continuar estudando' : 'Encoraje a tentar novamente sem desencorajar'}
+
+FORMATO DA RESPOSTA (OBRIGATÓRIO):
+Retorne APENAS um JSON válido no seguinte formato:
+{
+  "mensagem": "sua mensagem personalizada aqui",
+  "tom": "${aprovado ? 'parabenizacao' : 'orientacao'}"
+}
+
+IMPORTANTE: Sua resposta deve ser APENAS o JSON, sem texto adicional antes ou depois.`;
+
+  return prompt;
+}
+
+function parseMensagemPersonalizada(texto: string): MensagemPersonalizada {
+  try {
+    // Remove possível texto antes/depois do JSON
+    const jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('JSON não encontrado na resposta');
+    }
+
+    const json = JSON.parse(jsonMatch[0]);
+
+    return {
+      mensagem: String(json.mensagem || 'Mensagem não disponível'),
+      tom: json.tom === 'parabenizacao' || json.tom === 'orientacao' ? json.tom : 'orientacao'
+    };
+  } catch (error) {
+    logger.error('Erro ao parsear mensagem personalizada', { texto, error });
+
+    // Fallback
+    return {
+      mensagem: 'Continue se dedicando aos estudos. Você está no caminho certo!',
+      tom: 'orientacao'
     };
   }
 }

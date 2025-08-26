@@ -235,6 +235,51 @@ export async function finalizarExercicio(
   };
 }
 
+export async function iniciarExercicio(
+  usuarioId: string,
+  exercicioId: number,
+): Promise<ExercicioFinalizado> {
+  // Verificar se usuário e exercício existem
+  await verificarUsuarioExiste(usuarioId);
+  await verificarExercicioExiste(exercicioId);
+
+  // Verificar se já existe um progresso
+  const progressoExistente = await buscarProgressoExistente(usuarioId, exercicioId);
+
+  if (progressoExistente) {
+    // Se já existe, retornar o existente
+    return progressoExistente;
+  }
+
+  // Criar novo progresso em andamento
+  return await prisma.user_exercicio.create({
+    data: {
+      id: uuidv4(),
+      usuario_id: usuarioId,
+      exercicio_id: exercicioId,
+      iniciado_em: new Date(),
+      status: 'em_andamento',
+    },
+    include: {
+      exercicio: { include: { linguagem: true } },
+      usuario: {
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          tipo: true,
+        },
+      },
+      user_resposta: {
+        include: {
+          questao: true,
+          ia_evaluacao: { include: { ia_criterio: true } },
+        },
+      },
+    },
+  });
+}
+
 export async function listarProgressoUsuario(usuarioId: string) {
   return await prisma.user_exercicio.findMany({
     where: { usuario_id: usuarioId },

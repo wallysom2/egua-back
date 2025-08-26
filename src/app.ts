@@ -22,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', router);
 
 // Middleware de autenticação global para todas as outras rotas
+app.use(autenticar);
 
 // Rotas protegidas (precisam de autenticação)
 app.use('/conteudos', conteudoRoutes);

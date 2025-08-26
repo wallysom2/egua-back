@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+// Usar o mesmo segredo JWT que o serviço de auth
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
 export function autenticar(
   req: Request,
   res: Response,
@@ -12,10 +15,11 @@ export function autenticar(
     return;
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    const decoded = jwt.verify(token, JWT_SECRET);
     (req as any).usuario = decoded;
     next();
-  } catch {
+  } catch (error) {
+    console.error('Erro ao verificar token JWT:', error);
     res.status(401).json({ message: 'Token inválido' });
   }
 }

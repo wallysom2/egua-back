@@ -9,9 +9,13 @@ import {
   listarExerciciosConcluidos,
   obterResumoProgresso,
   verificarEConcluirExercicio,
+  iniciarExercicio,
 } from '../controllers/userExercicio.controller.js';
 
 const router = express.Router();
+
+// Iniciar um exercício (criar progresso em andamento)
+router.post('/iniciar/:exercicioId', iniciarExercicio as RequestHandler);
 
 // Lista o progresso de exercícios do usuário logado
 router.get('/meu-progresso', listarProgressoUsuario as RequestHandler);

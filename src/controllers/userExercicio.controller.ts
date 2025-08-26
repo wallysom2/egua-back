@@ -321,3 +321,47 @@ export async function verificarEConcluirExercicio(
     });
   }
 }
+
+export async function iniciarExercicio(
+  req: AuthenticatedRequest,
+  res: Response,
+) {
+  const { exercicioId } = req.params;
+  const usuarioId = req.usuario?.usuarioId;
+
+  if (!usuarioId) {
+    return res.status(403).json({ message: 'Usuário não autenticado' });
+  }
+
+  if (!exercicioId) {
+    return res.status(400).json({ message: 'ID do exercício é obrigatório' });
+  }
+
+  try {
+    const progresso = await userExercicioService.iniciarExercicio(
+      usuarioId,
+      parseInt(exercicioId),
+    );
+
+    res.json({
+      message: 'Exercício iniciado com sucesso',
+      data: progresso,
+    });
+  } catch (error) {
+    console.error('Erro ao iniciar exercício:', error);
+
+    if (error instanceof Error) {
+      if (error.message === 'Usuário não encontrado') {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message === 'Exercício não encontrado') {
+        return res.status(404).json({ message: error.message });
+      }
+    }
+
+    res.status(500).json({
+      message: 'Erro interno do servidor ao iniciar exercício',
+      error,
+    });
+  }
+}

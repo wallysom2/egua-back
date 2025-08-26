@@ -129,6 +129,24 @@ export async function obterAnaliseResposta(
 
     // Se não há análise ainda (questão não é de programação ou ainda processando)
     if (resposta.ia_evaluacao.length === 0) {
+      // Para questões não de programação, ainda podemos gerar uma mensagem personalizada genérica
+      let mensagemPersonalizada;
+      if (resposta.questao.tipo !== 'programacao') {
+        try {
+          mensagemPersonalizada = await geminiService.gerarMensagemPersonalizadaIdoso(
+            true, // Assumimos positivo para questões não avaliadas automaticamente
+            'Resposta submetida com sucesso',
+            resposta.questao.enunciado,
+            resposta.resposta,
+          );
+        } catch (error) {
+          mensagemPersonalizada = {
+            mensagem: "Obrigado por sua resposta! Continue praticando e aprendendo.",
+            tom: 'parabenizacao' as const
+          };
+        }
+      }
+
       return res.json({
         resposta: resposta.resposta,
         questao: resposta.questao,
@@ -137,27 +155,52 @@ export async function obterAnaliseResposta(
           resposta.questao.tipo === 'programacao'
             ? 'processando'
             : 'nao_aplicavel',
+        mensagem_personalizada: mensagemPersonalizada || {
+          mensagem: "Sua resposta está sendo processada. Aguarde um momento!",
+          tom: 'orientacao' as const
+        },
       });
     }
 
-    // Retornar análise completa
+    // Verificar se é aprovado baseado nas avaliações
+    const aprovado = resposta.ia_evaluacao.every(
+      (avaliacao: any) => avaliacao.aprovado,
+    );
+
+    // Gerar mensagem personalizada para idosos em tempo real
+    let mensagemPersonalizada;
+    try {
+      const feedbackGeral = resposta.ia_evaluacao.length > 0 
+        ? resposta.ia_evaluacao[0].feedback_geral 
+        : 'Análise não disponível';
+
+      mensagemPersonalizada = await geminiService.gerarMensagemPersonalizadaIdoso(
+        aprovado,
+        feedbackGeral,
+        resposta.questao.enunciado,
+        resposta.resposta,
+      );
+    } catch (error) {
+      logger.error('Erro ao gerar mensagem personalizada', error);
+      // Fallback para mensagem padrão
+      mensagemPersonalizada = {
+        mensagem: aprovado 
+          ? "Parabéns! Você acertou o exercício. Continue assim, você está indo muito bem!" 
+          : "Não desanime! Vamos tentar novamente. Revise o conteúdo e tente uma abordagem diferente.",
+        tom: aprovado ? 'parabenizacao' : 'orientacao'
+      };
+    }
+
+    // Retornar análise simplificada
     const analiseCompleta = {
       resposta: resposta.resposta,
       questao: resposta.questao,
       analise_disponivel: true,
-      analises: resposta.ia_evaluacao.map((avaliacao: any) => ({
-        criterio: avaliacao.ia_criterio.nome,
-        peso: avaliacao.ia_criterio.peso,
-        aprovado: avaliacao.aprovado,
-        feedback: avaliacao.feedback,
-        avaliado_em: avaliacao.avaliado_em,
-      })),
       resultado_geral: {
-        aprovado: resposta.ia_evaluacao.every(
-          (avaliacao: any) => avaliacao.aprovado,
-        ),
+        aprovado,
         pontuacao_media: calcularPontuacaoMedia(resposta.ia_evaluacao),
       },
+      mensagem_personalizada: mensagemPersonalizada,
     };
 
     res.json(analiseCompleta);
@@ -235,9 +278,10 @@ async function processarAnaliseProgramacao(
           user_resposta_id: respostaId,
           criterio_id: criterio.id,
           aprovado: analise.aprovado,
-          feedback: `${analise.feedback}\n\nSugestões: ${analise.sugestoes.join(
-            ', ',
-          )}`,
+          pontuacao: analise.pontuacao,
+          feedback_geral: analise.feedback,
+          sugestoes: analise.sugestoes,
+          feedback_especifico: `Sugestões: ${analise.sugestoes.join(', ')}`,
           avaliado_em: new Date(),
         },
       });
@@ -263,8 +307,11 @@ async function processarAnaliseProgramacao(
           user_resposta_id: respostaId,
           criterio_id: criterios[0].id,
           aprovado: false,
-          feedback:
+          pontuacao: 0,
+          feedback_geral:
             'Erro na análise automática. Resposta será revisada manualmente.',
+          sugestoes: [],
+          feedback_especifico: 'Falha no processamento automático.',
           avaliado_em: new Date(),
         },
       });
