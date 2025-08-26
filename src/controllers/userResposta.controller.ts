@@ -141,7 +141,7 @@ export async function obterAnaliseResposta(
           );
         } catch (error) {
           mensagemPersonalizada = {
-            mensagem: "Obrigado por sua resposta! Continue praticando e aprendendo.",
+            mensagem: "Obrigado por sua resposta na linguagem Égua! Continue praticando e aprendendo.",
             tom: 'parabenizacao' as const
           };
         }
@@ -156,7 +156,7 @@ export async function obterAnaliseResposta(
             ? 'processando'
             : 'nao_aplicavel',
         mensagem_personalizada: mensagemPersonalizada || {
-          mensagem: "Sua resposta está sendo processada. Aguarde um momento!",
+          mensagem: "Sua resposta na linguagem Égua está sendo processada. Aguarde um momento!",
           tom: 'orientacao' as const
         },
       });
@@ -185,8 +185,8 @@ export async function obterAnaliseResposta(
       // Fallback para mensagem padrão
       mensagemPersonalizada = {
         mensagem: aprovado 
-          ? "Parabéns! Você acertou o exercício. Continue assim, você está indo muito bem!" 
-          : "Não desanime! Vamos tentar novamente. Revise o conteúdo e tente uma abordagem diferente.",
+          ? "Parabéns! Você acertou o exercício na linguagem Égua. Continue assim, você está indo muito bem!" 
+          : "Não desanime! Lembre-se que na linguagem Égua usamos escreva() para mostrar mensagens. Tente novamente!",
         tom: aprovado ? 'parabenizacao' : 'orientacao'
       };
     }

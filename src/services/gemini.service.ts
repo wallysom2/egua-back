@@ -54,7 +54,14 @@ function construirPromptAnalise(
   exemploResposta?: string,
 ): string {
   let prompt = `
-Você é um professor de programação especializado em avaliar códigos de estudantes.
+Você é um professor de programação especializado em avaliar códigos de estudantes na LINGUAGEM ÉGUA.
+
+CONTEXTO IMPORTANTE:
+- A linguagem Égua é uma linguagem de programação brasileira
+- Sintaxe principal: escreva("mensagem") para imprimir texto
+- Comentários: // para linha única
+- Variáveis: var nome = valor
+- A linguagem usa palavras em português, não em inglês
 
 ENUNCIADO DO EXERCÍCIO:
 ${enunciado}
@@ -65,19 +72,20 @@ ${resposta}
 ${exemploResposta ? `EXEMPLO DE RESPOSTA ESPERADA:\n${exemploResposta}\n` : ''}
 
 INSTRUÇÕES PARA ANÁLISE:
-1. Analise se o código resolve o problema proposto
-2. Verifique a sintaxe e lógica
-3. Considere boas práticas de programação
-4. Identifique pontos de melhoria
-5. Dê uma pontuação de 0 a 100
+1. Analise EXCLUSIVAMENTE baseado na sintaxe da linguagem Égua
+2. Para "Olá mundo", a sintaxe correta é: escreva("Olá, mundo!")
+3. NÃO aceite sintaxes de outras linguagens como print(), console.log(), etc.
+4. Verifique se usa as palavras-chave corretas da linguagem Égua
+5. Considere boas práticas específicas da linguagem Égua
+6. Dê uma pontuação de 0 a 100
 
 FORMATO DA RESPOSTA (OBRIGATÓRIO):
 Retorne APENAS um JSON válido no seguinte formato:
 {
   "aprovado": boolean,
-  "feedback": "string com feedback detalhado",
+  "feedback": "string com feedback detalhado sobre linguagem Égua",
   "pontuacao": number (0-100),
-  "sugestoes": ["array", "de", "sugestões", "de", "melhoria"]
+  "sugestoes": ["array", "de", "sugestões", "específicas", "para", "linguagem", "égua"]
 }
 
 IMPORTANTE: Sua resposta deve ser APENAS o JSON, sem texto adicional antes ou depois.`;
@@ -149,8 +157,8 @@ export async function gerarMensagemPersonalizadaIdoso(
     // Fallback: mensagem padrão baseada no resultado
     return {
       mensagem: aprovado 
-        ? "Parabéns! Você acertou o exercício. Continue assim, você está indo muito bem!" 
-        : "Não desanime! Vamos tentar novamente. Revise o conteúdo e tente uma abordagem diferente.",
+        ? "Parabéns! Você acertou o exercício na linguagem Égua. Continue assim, você está indo muito bem!" 
+        : "Não desanime! Lembre-se que na linguagem Égua usamos escreva() para mostrar mensagens. Tente novamente!",
       tom: aprovado ? 'parabenizacao' : 'orientacao'
     };
   }
@@ -163,10 +171,11 @@ function construirPromptMensagemIdoso(
   resposta: string,
 ): string {
   const prompt = `
-Você é um professor especializado em ensinar programação para idosos de forma carinhosa e paciente.
+Você é um professor especializado em ensinar a linguagem de programação ÉGUA para idosos de forma carinhosa e paciente.
 
-CONTEXTO:
-- O aluno é uma pessoa idosa aprendendo programação
+CONTEXTO IMPORTANTE:
+- O aluno é uma pessoa idosa aprendendo a linguagem Égua (linguagem brasileira)
+- A linguagem Égua usa escreva() para imprimir texto, não print() ou outras funções
 - ${aprovado ? 'A resposta está CORRETA' : 'A resposta está INCORRETA'}
 - Exercício: ${enunciado}
 - Resposta do aluno: ${resposta}
@@ -175,10 +184,11 @@ CONTEXTO:
 INSTRUÇÕES:
 1. Use linguagem simples, carinhosa e encorajadora
 2. Evite termos técnicos complexos
-3. ${aprovado ? 'PARABENIZE o aluno pelo acerto de forma calorosa' : 'DÊ ORIENTAÇÃO sucinta sobre como melhorar'}
-4. Mantenha a mensagem entre 50-150 palavras
-5. Use tratamento respeitoso e afetuoso
-6. ${aprovado ? 'Incentive a continuar estudando' : 'Encoraje a tentar novamente sem desencorajar'}
+3. ${aprovado ? 'PARABENIZE o aluno pelo acerto de forma calorosa' : 'DÊ ORIENTAÇÃO sucinta sobre como corrigir usando a sintaxe da linguagem Égua'}
+4. Se a resposta estiver incorreta, mencione especificamente que deve usar escreva() da linguagem Égua
+5. Mantenha a mensagem entre 50-150 palavras
+6. Use tratamento respeitoso e afetuoso
+7. ${aprovado ? 'Incentive a continuar estudando' : 'Encoraje a tentar novamente com a sintaxe correta da Égua'}
 
 FORMATO DA RESPOSTA (OBRIGATÓRIO):
 Retorne APENAS um JSON válido no seguinte formato:
