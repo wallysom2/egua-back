@@ -5,8 +5,8 @@ import { cadastroSchema, loginSchema } from '../schema/usuario.schema.js';
 
 const router = express.Router();
 
-router.post('/cadastro', validateRequest(cadastroSchema), cadastro);
+router.post('/cadastro', cadastro);
 
-router.post('/login', validateRequest(loginSchema), login);
+router.post('/login', login);
 
 export { router as authRoutes }; 

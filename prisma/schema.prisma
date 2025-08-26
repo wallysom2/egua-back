@@ -56,14 +56,17 @@ model ia_criterio {
 }
 
 model ia_evaluacao {
-  id               String        @id @db.Char(36)
-  user_resposta_id String        @db.Char(36)
-  criterio_id      Int
-  aprovado         Boolean
-  feedback         String?       @db.Text
-  avaliado_em      DateTime      @default(now())
-  user_resposta    user_resposta @relation(fields: [user_resposta_id], references: [id], onDelete: Cascade, map: "ia_evaluacao_ibfk_1")
-  ia_criterio      ia_criterio   @relation(fields: [criterio_id], references: [id], map: "ia_evaluacao_ibfk_2")
+  id                  String        @id @db.Char(36)
+  user_resposta_id    String        @db.Char(36)
+  criterio_id         Int
+  aprovado            Boolean
+  pontuacao           Int
+  feedback_geral      String        @db.Text
+  sugestoes           Json
+  feedback_especifico String        @db.Text
+  avaliado_em         DateTime      @default(now())
+  user_resposta       user_resposta @relation(fields: [user_resposta_id], references: [id], onDelete: Cascade, map: "ia_evaluacao_ibfk_1")
+  ia_criterio         ia_criterio   @relation(fields: [criterio_id], references: [id], map: "ia_evaluacao_ibfk_2")
 
   @@index([criterio_id], map: "criterio_id")
   @@index([user_resposta_id], map: "user_resposta_id")
@@ -83,7 +86,6 @@ model questao {
   nivel             questao_nivel       @default(facil)
   exemplo_resposta  String?             @db.LongText
   opcoes            Json?
-  resposta_correta  String?             @db.VarChar(255)
   tipo              questao_tipo        @default(quiz)
   exercicio_questao exercicio_questao[]
   conteudo          conteudo?           @relation(fields: [conteudo_id], references: [id], map: "questao_ibfk_1")
