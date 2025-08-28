@@ -6,14 +6,15 @@ import chalk from 'chalk';
 
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 8080;
+const HOST = process.env.HOST || '0.0.0.0';
 
 const startServer = async () => {
   try {
     await connectDatabase();
     
-    app.listen(PORT, () => {
-      logger.info(`🚀 Servidor rodando na porta ${chalk.green(PORT)}`);
+    app.listen(PORT, HOST, () => {
+      logger.info(`🚀 Servidor rodando em ${chalk.green(`${HOST}:${PORT}`)}`);
     });
   } catch (error) {
     logger.error('❌ Falha ao iniciar o servidor', error);

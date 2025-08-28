@@ -12,13 +12,46 @@ export async function buscarQuestaoPorId(id: number) {
 }
 
 export async function criarQuestao(data: QuestaoInput) {
-  return await prisma.questao.create({ data });
+  const { conteudo_id, ...questaoData } = data;
+  
+  // Se conteudo_id for fornecido, criar a questão com a relação
+  if (conteudo_id) {
+    return await prisma.questao.create({
+      data: {
+        ...questaoData,
+        conteudo: {
+          connect: { id: conteudo_id }
+        }
+      }
+    });
+  }
+  
+  // Se não, criar a questão sem relação com conteúdo
+  return await prisma.questao.create({
+    data: questaoData
+  });
 }
 
 export async function atualizarQuestao(id: number, data: QuestaoInput) {
+  const { conteudo_id, ...questaoData } = data;
+  
+  // Se conteudo_id for fornecido, atualizar a questão com a relação
+  if (conteudo_id) {
+    return await prisma.questao.update({
+      where: { id },
+      data: {
+        ...questaoData,
+        conteudo: {
+          connect: { id: conteudo_id }
+        }
+      }
+    });
+  }
+  
+  // Se não, atualizar a questão sem alterar a relação com conteúdo
   return await prisma.questao.update({
     where: { id },
-    data,
+    data: questaoData
   });
 }
 

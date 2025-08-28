@@ -33,6 +33,15 @@ app.use('/progresso-exercicios', userExercicioRoutes);
 app.use('/respostas', userRespostaRoutes);
 app.use('/ia-criterios', iaCriterioRoutes);
 
+// Health check endpoint para AWS App Runner
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({ status: '🎯 Servidor rodando normalmente' });
 });
