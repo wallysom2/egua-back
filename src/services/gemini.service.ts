@@ -21,7 +21,7 @@ export async function analisarRespostaProgramacao(
   exemploResposta?: string,
 ): Promise<AnaliseResultado> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     const prompt = construirPromptAnalise(enunciado, resposta, exemploResposta);
 
@@ -130,7 +130,7 @@ export async function gerarMensagemPersonalizadaIdoso(
   resposta: string,
 ): Promise<MensagemPersonalizada> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     const prompt = construirPromptMensagemIdoso(aprovado, feedback, enunciado, resposta);
 
