@@ -125,15 +125,21 @@ model user_resposta {
 }
 
 model usuario {
-  id             String           @id @db.Char(36)
-  nome           String           @db.VarChar(255)
-  email          String           @unique(map: "email") @db.VarChar(255)
-  senha_hash     String           @db.VarChar(255)
-  tipo           usuario_tipo
-  ativo          Boolean          @default(true)
-  created_at     DateTime         @default(now())
-  updated_at     DateTime         @default(now())
-  user_exercicio user_exercicio[]
+  id                           String           @id @db.Char(36)
+  nome                         String           @db.VarChar(255)
+  email                        String           @unique(map: "email") @db.VarChar(255)
+  senha_hash                   String           @db.VarChar(255)
+  tipo                         usuario_tipo
+  ativo                        Boolean          @default(true)
+  created_at                   DateTime         @default(now())
+  updated_at                   DateTime         @default(now())
+  reset_password_token         String?          @db.VarChar(255)
+  reset_password_token_expires DateTime?        @db.DateTime(0)
+  reset_password_requested_at  DateTime?        @db.DateTime(0)
+  user_exercicio               user_exercicio[]
+
+  @@index([reset_password_token], map: "idx_usuario_reset_token")
+  @@index([reset_password_token_expires], map: "idx_usuario_reset_token_expires")
 }
 
 enum questao_nivel {

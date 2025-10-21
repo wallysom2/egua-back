@@ -21,8 +21,14 @@ app.use(express.urlencoded({ extended: true }));
 // Rotas públicas (não precisam de autenticação)
 app.use('/api', router);
 
-// Middleware de autenticação global para todas as outras rotas
-app.use(autenticar);
+// Middleware de autenticação para rotas protegidas (excluindo /api/auth)
+app.use((req, res, next) => {
+  // Pular autenticação para rotas de auth
+  if (req.path.startsWith('/api/auth')) {
+    return next();
+  }
+  autenticar(req, res, next);
+});
 
 // Rotas protegidas (precisam de autenticação)
 app.use('/conteudos', conteudoRoutes);
