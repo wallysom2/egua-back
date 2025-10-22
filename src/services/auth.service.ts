@@ -153,8 +153,8 @@ export const solicitarRecuperacaoSenha = async (email: string) => {
       };
     }
 
-    // Gerar token único
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    // Gerar token numérico de 6 dígitos
+    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
     // Salvar token no banco
