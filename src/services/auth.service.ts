@@ -153,11 +153,24 @@ export const solicitarRecuperacaoSenha = async (email: string) => {
       };
     }
 
-    // Gerar token numérico de 6 dígitos
+    // Limpar tokens antigos primeiro (se existirem)
+    await prisma.usuario.updateMany({
+      where: { 
+        email: email,
+        reset_password_token: { not: null }
+      },
+      data: {
+        reset_password_token: null,
+        reset_password_token_expires: null,
+        reset_password_requested_at: null
+      }
+    });
+
+    // Gerar novo token numérico de 6 dígitos
     const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
     const tokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
-    // Salvar token no banco
+    // Salvar novo token no banco
     await prisma.usuario.update({
       where: { id: usuario.id },
       data: {
@@ -166,6 +179,8 @@ export const solicitarRecuperacaoSenha = async (email: string) => {
         reset_password_requested_at: new Date()
       }
     });
+
+    logger.info(`Novo token ${resetToken} gerado para usuário ${usuario.email} (ID: ${usuario.id})`);
 
     // Enviar email
     await enviarEmailRecuperacaoSenha(usuario.email, usuario.nome, resetToken);
