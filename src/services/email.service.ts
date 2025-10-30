@@ -17,30 +17,36 @@ export const enviarEmailRecuperacaoSenha = async (email: string, nome: string, t
       to: [email],
       subject: 'Recuperação de Senha - Senior Code',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Olá, ${nome}!</h2>
-          <p>Você solicitou a recuperação de senha para sua conta no Senior Code.</p>
-          <p>Use o código abaixo para redefinir sua senha:</p>
-          <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
-            Acesse o link abaixo e insira este código na página de recuperação:
-          </p>
-          <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f8f9fa; border-radius: 10px;">
-            <h1 style="color: #007bff; font-size: 36px; margin: 0; letter-spacing: 5px; font-family: 'Courier New', monospace;">${token}</h1>
-            <p style="color: #666; font-size: 14px; margin: 10px 0 0 0;">Código de recuperação</p>
+        <div style="background:#f7f8fb; padding:32px 16px; font-family: Arial, Helvetica, sans-serif;">
+          <div style="max-width:680px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(17,24,39,0.08);">
+            <div style="padding:32px 28px 0 28px; text-align:center;">
+              <div style="font-size:34px; line-height:1.2; font-weight:800; color:#4f46e5; margin:0 0 8px;">Senior Code AI</div>
+              <div style="color:#6b7280; font-size:15px; max-width:520px; margin:0 auto 20px;">
+                Uma jornada simplificada para aprender com ajuda de IA. Use o código abaixo para continuar a recuperação da sua conta.
+              </div>
+            </div>
+
+            <div style="padding:0 28px 28px 28px;">
+              <div style="text-align:center; margin:22px auto; padding:22px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:14px; max-width:420px;">
+                <div style="color:#7c3aed; font-size:40px; letter-spacing:8px; font-family:'Courier New', monospace; font-weight:800;">${token}</div>
+                <div style="color:#6b7280; font-size:12px; margin-top:8px;">Código de verificação (expira em 1 hora)</div>
+              </div>
+
+              <div style="text-align:center; margin:28px 0 12px;">
+                <a href="${resetUrl}" style="background:linear-gradient(90deg, #7c3aed 0%, #4f46e5 100%); color:#ffffff; padding:12px 22px; text-decoration:none; border-radius:999px; font-weight:700; display:inline-block; box-shadow:0 6px 18px rgba(79,70,229,0.35);">
+                  Abrir página de recuperação →
+                </a>
+              </div>
+
+              <p style="color:#6b7280; font-size:12px; text-align:center; margin:16px 0 0;">
+                Se você não solicitou esta recuperação, ignore este email com segurança.
+              </p>
+            </div>
+
+            <div style="border-top:1px solid #f3f4f6; padding:14px 24px; color:#9ca3af; font-size:12px; text-align:center;">
+              Equipe Senior Code
+            </div>
           </div>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Inserir Código
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px;">
-            Este código expira em 1 hora. Se você não solicitou esta recuperação, ignore este email.
-          </p>
-          <p style="color: #666; font-size: 12px;">
-            Se o botão não funcionar, copie e cole este link no seu navegador:<br>
-            <a href="${resetUrl}">${resetUrl}</a>
-          </p>
         </div>
       `,
     });
