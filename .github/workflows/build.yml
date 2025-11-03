@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar Prisma Client
+        run: npm run prisma:generate
+
+      - name: Build do projeto
+        run: npm run build
+
+      - name: Verificar build
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Erro: diretório dist não foi criado"
+            exit 1
+          fi
+          if [ ! -f "dist/server.js" ]; then
+            echo "Erro: arquivo dist/server.js não foi criado"
+            exit 1
+          fi
+          echo "Build concluído com sucesso!"
+
+      - name: Upload artefato do build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 7
+
