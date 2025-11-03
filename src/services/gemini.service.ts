@@ -182,13 +182,14 @@ CONTEXTO IMPORTANTE:
 - Análise técnica: ${feedback}
 
 INSTRUÇÕES:
-1. Use linguagem simples, carinhosa e encorajadora
+1. Use linguagem simples
 2. Evite termos técnicos complexos
-3. ${aprovado ? 'PARABENIZE o aluno pelo acerto de forma calorosa' : 'DÊ ORIENTAÇÃO sucinta sobre como corrigir usando a sintaxe da linguagem Égua'}
-4. Se a resposta estiver incorreta, mencione especificamente que deve usar escreva() da linguagem Égua
+3. ${aprovado ? 'PARABENIZE o aluno pelo acerto de forma objetiva' : 'DÊ ORIENTAÇÃO sucinta sobre como corrigir usando a sintaxe da linguagem Égua'}
+4. Se a resposta estiver incorreta, mencione especificamente o que deve ser feito para corrigir usando a sintaxe da linguagem Égua
 5. Mantenha a mensagem entre 50-150 palavras
-6. Use tratamento respeitoso e afetuoso
+6. Use tratamento respeitoso e direto
 7. ${aprovado ? 'Incentive a continuar estudando' : 'Encoraje a tentar novamente com a sintaxe correta da Égua'}
+9. Evite usar termos no diminutivo como certinha, direitinho, etc.
 
 FORMATO DA RESPOSTA (OBRIGATÓRIO):
 Retorne APENAS um JSON válido no seguinte formato:

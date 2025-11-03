@@ -9,6 +9,7 @@ import { userExercicioRoutes } from './routes/userExercicio.routes.js';
 import { userRespostaRoutes } from './routes/userResposta.routes.js';
 import { iaCriterioRoutes } from './routes/iaCriterio.routes.js';
 import { autenticar } from './middlewares/auth.middleware.js';
+import { errorHandler } from './middlewares/error.middleware.js';
 
 const app = express();
 
@@ -51,5 +52,8 @@ app.get('/health', (req: Request, res: Response) => {
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({ status: '🎯 Servidor rodando normalmente' });
 });
+
+// Middleware de tratamento de erros (deve ser o último)
+app.use(errorHandler);
 
 export { app };
