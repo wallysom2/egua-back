@@ -185,8 +185,8 @@ export async function obterAnaliseResposta(
       // Fallback para mensagem padrão
       mensagemPersonalizada = {
         mensagem: aprovado 
-          ? "Parabéns! Você acertou o exercício na linguagem Égua. Continue assim, você está indo muito bem!" 
-          : "Não desanime! Lembre-se que na linguagem Égua usamos escreva() para mostrar mensagens. Tente novamente!",
+          ? "Parabéns! Você acertou o exercício. Sua resposta está correta. Continue praticando." 
+          : "Sua resposta precisa de correção. Verifique se está usando a sintaxe correta da linguagem Égua. Revise o código e tente novamente.",
         tom: aprovado ? 'parabenizacao' : 'orientacao'
       };
     }
