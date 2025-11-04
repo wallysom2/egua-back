@@ -44,7 +44,8 @@ export async function analisarRespostaProgramacao(
     return analise;
   } catch (error) {
     logger.error('Erro na análise do Gemini', error);
-    throw new Error('Falha na análise da resposta');
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    throw new Error(`Falha na análise da resposta pelo Gemini: ${errorMessage}`);
   }
 }
 
@@ -162,13 +163,9 @@ export async function gerarMensagemPersonalizadaIdoso(
   } catch (error) {
     logger.error('Erro ao gerar mensagem personalizada', error);
     
-    // Fallback: mensagem padrão baseada no resultado
-    return {
-      mensagem: aprovado 
-        ? "Parabéns! Você acertou o exercício. Sua resposta está correta. Continue praticando." 
-        : "Sua resposta precisa de correção. Verifique se está usando a sintaxe correta da linguagem Égua. Revise o código e tente novamente.",
-      tom: aprovado ? 'parabenizacao' : 'orientacao'
-    };
+    // Lançar erro para que seja capturado e retornado ao frontend
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao gerar mensagem';
+    throw new Error(`Falha ao gerar mensagem personalizada: ${errorMessage}`);
   }
 }
 

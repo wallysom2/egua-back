@@ -140,10 +140,13 @@ export async function obterAnaliseResposta(
             resposta.resposta,
           );
         } catch (error) {
-          mensagemPersonalizada = {
-            mensagem: "Obrigado por sua resposta na linguagem Égua! Continue praticando e aprendendo.",
-            tom: 'parabenizacao' as const
-          };
+          logger.error('Erro ao gerar mensagem personalizada para questão não programação', error);
+          // Retornar erro para o frontend quando o Gemini falhar
+          return res.status(503).json({ 
+            message: 'Serviço de análise temporariamente indisponível',
+            error: error instanceof Error ? error.message : 'Erro ao gerar mensagem personalizada',
+            code: 'GEMINI_SERVICE_ERROR'
+          });
         }
       }
 
@@ -182,13 +185,12 @@ export async function obterAnaliseResposta(
       );
     } catch (error) {
       logger.error('Erro ao gerar mensagem personalizada', error);
-      // Fallback para mensagem padrão
-      mensagemPersonalizada = {
-        mensagem: aprovado 
-          ? "Parabéns! Você acertou o exercício. Sua resposta está correta. Continue praticando." 
-          : "Sua resposta precisa de correção. Verifique se está usando a sintaxe correta da linguagem Égua. Revise o código e tente novamente.",
-        tom: aprovado ? 'parabenizacao' : 'orientacao'
-      };
+      // Retornar erro para o frontend quando o Gemini falhar
+      return res.status(503).json({ 
+        message: 'Serviço de análise temporariamente indisponível',
+        error: error instanceof Error ? error.message : 'Erro ao gerar mensagem personalizada',
+        code: 'GEMINI_SERVICE_ERROR'
+      });
     }
 
     // Retornar análise simplificada
