@@ -97,6 +97,14 @@ export const loginUsuario = async (dadosLogin: LoginInput) => {
       };
     }
 
+    // Verificar se usuário tem senha (não é apenas OAuth)
+    if (!usuario.senha_hash) {
+      return {
+        success: false,
+        message: 'Este usuário foi cadastrado via Google. Use o login com Google.'
+      };
+    }
+
     // Comparar senhas
     const isSenhaValida = await bcrypt.compare(senha, usuario.senha_hash);
 

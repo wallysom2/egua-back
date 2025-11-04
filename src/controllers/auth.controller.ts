@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { cadastrarUsuario, loginUsuario, solicitarRecuperacaoSenha, redefinirSenha as redefinirSenhaService, validarTokenRecuperacao } from '../services/auth.service.js';
+import { verificarTokenGoogle, loginOuCadastrarGoogle } from '../services/google-auth.service.js';
 import { logger } from '../utils/logger.js';
 import { CadastroInput, LoginInput } from '../schema/usuario.schema.js';
 
@@ -141,6 +142,44 @@ export const validarToken = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({
       success: false,
       message: 'Erro ao validar token'
+    });
+  }
+};
+
+/**
+ * Login com Google OAuth
+ */
+export const loginGoogle = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      res.status(400).json({
+        success: false,
+        message: 'Token do Google não fornecido'
+      });
+      return;
+    }
+
+    // Verificar token com Google
+    const googleData = await verificarTokenGoogle(token);
+
+    if (!googleData) {
+      res.status(401).json({
+        success: false,
+        message: 'Token do Google inválido ou expirado'
+      });
+      return;
+    }
+
+    // Login ou cadastro do usuário
+    const resultado = await loginOuCadastrarGoogle(googleData);
+    res.status(200).json(resultado);
+  } catch (error) {
+    logger.error('Erro no controlador de login Google:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao fazer login com Google'
     });
   }
 }; 
