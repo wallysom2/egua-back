@@ -42,8 +42,27 @@ export async function analisarRespostaProgramacao(
     });
 
     return analise;
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Erro na análise do Gemini', error);
+    
+    // Verificar se é erro de quota excedida (429)
+    const isQuotaExceeded = 
+      error?.status === 429 || 
+      error?.message?.includes('429') || 
+      error?.message?.includes('quota') ||
+      error?.message?.includes('Quota exceeded');
+
+    if (isQuotaExceeded) {
+      logger.warn('Quota do Gemini excedida, retornando análise padrão');
+      // Retornar análise padrão indicando que precisa revisão manual
+      return {
+        aprovado: false,
+        feedback: 'Análise automática temporariamente indisponível devido a limitações de quota. Sua resposta será revisada manualmente.',
+        pontuacao: 0,
+        sugestoes: ['Aguarde a revisão manual', 'Verifique a sintaxe da linguagem Égua']
+      };
+    }
+    
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     throw new Error(`Falha na análise da resposta pelo Gemini: ${errorMessage}`);
   }
@@ -160,12 +179,39 @@ export async function gerarMensagemPersonalizadaIdoso(
     });
 
     return mensagem;
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Erro ao gerar mensagem personalizada', error);
     
-    // Lançar erro para que seja capturado e retornado ao frontend
+    // Verificar se é erro de quota excedida (429)
+    const isQuotaExceeded = 
+      error?.status === 429 || 
+      error?.message?.includes('429') || 
+      error?.message?.includes('quota') ||
+      error?.message?.includes('Quota exceeded');
+
+    if (isQuotaExceeded) {
+      logger.warn('Quota do Gemini excedida, retornando mensagem padrão');
+      // Retornar mensagem padrão ao invés de lançar erro
+      return gerarMensagemPadrao(aprovado);
+    }
+    
+    // Para outros erros, lançar exceção
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao gerar mensagem';
     throw new Error(`Falha ao gerar mensagem personalizada: ${errorMessage}`);
+  }
+}
+
+function gerarMensagemPadrao(aprovado: boolean): MensagemPersonalizada {
+  if (aprovado) {
+    return {
+      mensagem: 'Parabéns! Sua resposta está correta. Continue praticando e se dedicando aos estudos.',
+      tom: 'parabenizacao'
+    };
+  } else {
+    return {
+      mensagem: 'Sua resposta precisa de ajustes. Revise o código e verifique se está usando a sintaxe correta da linguagem Égua. Tente novamente!',
+      tom: 'orientacao'
+    };
   }
 }
 

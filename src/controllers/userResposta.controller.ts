@@ -141,12 +141,11 @@ export async function obterAnaliseResposta(
           );
         } catch (error) {
           logger.error('Erro ao gerar mensagem personalizada para questão não programação', error);
-          // Retornar erro para o frontend quando o Gemini falhar
-          return res.status(503).json({ 
-            message: 'Serviço de análise temporariamente indisponível',
-            error: error instanceof Error ? error.message : 'Erro ao gerar mensagem personalizada',
-            code: 'GEMINI_SERVICE_ERROR'
-          });
+          // Usar mensagem padrão ao invés de retornar erro
+          mensagemPersonalizada = {
+            mensagem: 'Resposta submetida com sucesso. Continue praticando!',
+            tom: 'parabenizacao' as const
+          };
         }
       }
 
@@ -171,6 +170,7 @@ export async function obterAnaliseResposta(
     );
 
     // Gerar mensagem personalizada para idosos em tempo real
+    // Se o Gemini falhar (quota excedida), usar mensagem padrão ao invés de retornar erro
     let mensagemPersonalizada;
     try {
       const feedbackGeral = resposta.ia_evaluacao.length > 0 
@@ -185,12 +185,17 @@ export async function obterAnaliseResposta(
       );
     } catch (error) {
       logger.error('Erro ao gerar mensagem personalizada', error);
-      // Retornar erro para o frontend quando o Gemini falhar
-      return res.status(503).json({ 
-        message: 'Serviço de análise temporariamente indisponível',
-        error: error instanceof Error ? error.message : 'Erro ao gerar mensagem personalizada',
-        code: 'GEMINI_SERVICE_ERROR'
-      });
+      // Usar mensagem padrão ao invés de retornar erro
+      // Isso evita que o frontend continue fazendo polling quando há erro
+      mensagemPersonalizada = aprovado 
+        ? {
+            mensagem: 'Parabéns! Sua resposta está correta. Continue praticando e se dedicando aos estudos.',
+            tom: 'parabenizacao' as const
+          }
+        : {
+            mensagem: 'Sua resposta precisa de ajustes. Revise o código e verifique se está usando a sintaxe correta da linguagem Égua. Tente novamente!',
+            tom: 'orientacao' as const
+          };
     }
 
     // Retornar análise simplificada
@@ -260,6 +265,18 @@ async function processarAnaliseProgramacao(
   exemploResposta?: string | null,
 ) {
   try {
+    // Verificar se já existe análise para esta resposta (evitar processamento duplicado)
+    const analiseExistente = await prisma.ia_evaluacao.findFirst({
+      where: { user_resposta_id: respostaId },
+    });
+
+    if (analiseExistente) {
+      logger.info('Análise já existe para esta resposta, pulando processamento', {
+        respostaId,
+      });
+      return;
+    }
+
     logger.info('Iniciando análise de programação', { respostaId });
 
     // Chamar o serviço Gemini para análise
@@ -300,23 +317,30 @@ async function processarAnaliseProgramacao(
       error,
     });
 
-    // Em caso de erro, criar uma avaliação indicando falha
-    const criterios = await obterCriteriosAvaliacao();
-    if (criterios.length > 0) {
-      await prisma.ia_evaluacao.create({
-        data: {
-          id: uuidv4(),
-          user_resposta_id: respostaId,
-          criterio_id: criterios[0].id,
-          aprovado: false,
-          pontuacao: 0,
-          feedback_geral:
-            'Erro na análise automática. Resposta será revisada manualmente.',
-          sugestoes: [],
-          feedback_especifico: 'Falha no processamento automático.',
-          avaliado_em: new Date(),
-        },
-      });
+    // Verificar se já existe avaliação (pode ter sido criada por outra tentativa)
+    const analiseExistente = await prisma.ia_evaluacao.findFirst({
+      where: { user_resposta_id: respostaId },
+    });
+
+    // Só criar avaliação de erro se não existir nenhuma
+    if (!analiseExistente) {
+      const criterios = await obterCriteriosAvaliacao();
+      if (criterios.length > 0) {
+        await prisma.ia_evaluacao.create({
+          data: {
+            id: uuidv4(),
+            user_resposta_id: respostaId,
+            criterio_id: criterios[0].id,
+            aprovado: false,
+            pontuacao: 0,
+            feedback_geral:
+              'Erro na análise automática. Resposta será revisada manualmente.',
+            sugestoes: [],
+            feedback_especifico: 'Falha no processamento automático.',
+            avaliado_em: new Date(),
+          },
+        });
+      }
     }
   }
 }
