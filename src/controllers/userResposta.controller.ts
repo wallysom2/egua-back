@@ -2,7 +2,10 @@ import { Request, Response } from 'express';
 import { prisma } from '../utils/database.js';
 import { SubmeterRespostaInput } from '../schema/userResposta.schema.js';
 import { v4 as uuidv4 } from 'uuid';
-import * as geminiService from '../services/gemini.service.js';
+import {
+  analisarRespostaProgramacao,
+  gerarMensagemPersonalizadaIdoso,
+} from '../services/groq.service.js';
 import { logger } from '../utils/logger.js';
 
 // Extender a interface Request para incluir o usuário autenticado
@@ -133,7 +136,7 @@ export async function obterAnaliseResposta(
       let mensagemPersonalizada;
       if (resposta.questao.tipo !== 'programacao') {
         try {
-          mensagemPersonalizada = await geminiService.gerarMensagemPersonalizadaIdoso(
+          mensagemPersonalizada = await gerarMensagemPersonalizadaIdoso(
             true, // Assumimos positivo para questões não avaliadas automaticamente
             'Resposta submetida com sucesso',
             resposta.questao.enunciado,
@@ -173,11 +176,11 @@ export async function obterAnaliseResposta(
     // Se o Gemini falhar (quota excedida), usar mensagem padrão ao invés de retornar erro
     let mensagemPersonalizada;
     try {
-      const feedbackGeral = resposta.ia_evaluacao.length > 0 
-        ? resposta.ia_evaluacao[0].feedback_geral 
+      const feedbackGeral = resposta.ia_evaluacao.length > 0
+        ? resposta.ia_evaluacao[0].feedback_geral
         : 'Análise não disponível';
 
-      mensagemPersonalizada = await geminiService.gerarMensagemPersonalizadaIdoso(
+      mensagemPersonalizada = await gerarMensagemPersonalizadaIdoso(
         aprovado,
         feedbackGeral,
         resposta.questao.enunciado,
@@ -187,15 +190,15 @@ export async function obterAnaliseResposta(
       logger.error('Erro ao gerar mensagem personalizada', error);
       // Usar mensagem padrão ao invés de retornar erro
       // Isso evita que o frontend continue fazendo polling quando há erro
-      mensagemPersonalizada = aprovado 
+      mensagemPersonalizada = aprovado
         ? {
-            mensagem: 'Parabéns! Sua resposta está correta. Continue praticando e se dedicando aos estudos.',
-            tom: 'parabenizacao' as const
-          }
+          mensagem: 'Parabéns! Sua resposta está correta. Continue praticando e se dedicando aos estudos.',
+          tom: 'parabenizacao' as const
+        }
         : {
-            mensagem: 'Sua resposta precisa de ajustes. Revise o código e verifique se está usando a sintaxe correta da linguagem Égua. Tente novamente!',
-            tom: 'orientacao' as const
-          };
+          mensagem: 'Sua resposta precisa de ajustes. Revise o código e verifique se está usando a sintaxe correta da linguagem Égua. Tente novamente!',
+          tom: 'orientacao' as const
+        };
     }
 
     // Retornar análise simplificada
@@ -279,8 +282,8 @@ async function processarAnaliseProgramacao(
 
     logger.info('Iniciando análise de programação', { respostaId });
 
-    // Chamar o serviço Gemini para análise
-    const analise = await geminiService.analisarRespostaProgramacao(
+    // Chamar o serviço Groq para análise
+    const analise = await analisarRespostaProgramacao(
       enunciado,
       resposta,
       exemploResposta || undefined,
