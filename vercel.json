@@ -2,6 +2,11 @@
   "version": 2,
   "buildCommand": "npm run build && npm run prisma:generate",
   "installCommand": "npm install",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "dist/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",

@@ -1,8 +1,8 @@
 // @ts-nocheck
-// Importar dos arquivos fonte - a Vercel compilará tudo automaticamente
-import { app } from '../src/app.js';
-import { connectDatabase } from '../src/utils/database.js';
-import { logger } from '../src/utils/logger.js';
+// Importar usando caminho absoluto relativo ao dist após o build
+import { app } from '../dist/app.js';
+import { connectDatabase } from '../dist/utils/database.js';
+import { logger } from '../dist/utils/logger.js';
 
 // Conectar ao banco de dados quando a função serverless for inicializada
 let isConnected = false;
@@ -19,7 +19,6 @@ const connectIfNeeded = async () => {
         } catch (error) {
           logger.error('Erro ao conectar ao banco de dados', error);
           // Não lançar erro para permitir que a função continue
-          throw error;
         }
       }
     })();
@@ -27,15 +26,15 @@ const connectIfNeeded = async () => {
   return connectionPromise;
 };
 
-// Handler serverless para Vercel
+// Inicializar conexão na primeira execução
+connectIfNeeded().catch(err => {
+  logger.error('Erro na inicialização do banco', err);
+});
+
+// Handler serverless para Vercel - exportar o app Express diretamente
 export default async function handler(req: any, res: any) {
   // Garantir que está conectado antes de processar a requisição
-  try {
-    await connectIfNeeded();
-  } catch (error) {
-    // Log do erro mas continua processando
-    logger.error('Erro na conexão do banco', error);
-  }
+  await connectIfNeeded();
   
   // Passar a requisição para o Express
   return app(req, res);
