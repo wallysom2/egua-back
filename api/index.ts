@@ -1,7 +1,7 @@
-// Importar dos arquivos fonte - a Vercel compilará automaticamente
-import { app } from '../src/app.js';
-import { connectDatabase } from '../src/utils/database.js';
-import { logger } from '../src/utils/logger.js';
+// Importar dos arquivos compilados em dist/
+import { app } from '../dist/app.js';
+import { connectDatabase } from '../dist/utils/database.js';
+import { logger } from '../dist/utils/logger.js';
 
 // Conectar ao banco de dados quando a função serverless for inicializada
 let isConnected = false;
