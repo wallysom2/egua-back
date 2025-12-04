@@ -60,7 +60,7 @@ export async function analisarRespostaProgramacao(
 
         return {
             aprovado: false,
-            feedback: 'Erro na análise automática. Resposta será revisada manualmente.',
+            feedback: 'Erro na análise automática. Resposta será revisada.',
             pontuacao: 0,
             sugestoes: ['Aguarde a revisão manual', 'Verifique a sintaxe da linguagem Égua']
         };
