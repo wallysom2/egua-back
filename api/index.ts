@@ -1,42 +1,70 @@
 // @ts-nocheck
-// Importar usando caminho absoluto relativo ao dist após o build
-import { app } from '../dist/app.js';
-import { connectDatabase } from '../dist/utils/database.js';
-import { logger } from '../dist/utils/logger.js';
-
-// Conectar ao banco de dados quando a função serverless for inicializada
+// Handler serverless para Vercel usando import dinâmico
+let appInstance: any = null;
 let isConnected = false;
-let connectionPromise: Promise<void> | null = null;
+let initPromise: Promise<any> | null = null;
 
-const connectIfNeeded = async () => {
-  if (!connectionPromise) {
-    connectionPromise = (async () => {
-      if (!isConnected) {
+async function getApp() {
+  if (!initPromise) {
+    initPromise = (async () => {
+      if (!appInstance) {
         try {
-          await connectDatabase();
-          isConnected = true;
-          logger.info('Banco de dados conectado (serverless)');
+          // Usar caminho relativo ao diretório de trabalho da Vercel
+          // A Vercel coloca os arquivos compilados em /var/task/
+          const appPath = process.env.VERCEL 
+            ? './dist/app.js'  // Na Vercel, dist/ está no mesmo nível
+            : '../dist/app.js'; // Localmente
+          
+          const appModule = await import(appPath);
+          appInstance = appModule.default || appModule.app;
+          
+          // Conectar ao banco de dados
+          if (!isConnected) {
+            const dbPath = process.env.VERCEL
+              ? './dist/utils/database.js'
+              : '../dist/utils/database.js';
+            const loggerPath = process.env.VERCEL
+              ? './dist/utils/logger.js'
+              : '../dist/utils/logger.js';
+            
+            const { connectDatabase } = await import(dbPath);
+            await connectDatabase();
+            isConnected = true;
+            const { logger } = await import(loggerPath);
+            logger.info('Banco de dados conectado (serverless)');
+          }
         } catch (error) {
-          logger.error('Erro ao conectar ao banco de dados', error);
-          // Não lançar erro para permitir que a função continue
+          console.error('Erro ao inicializar app:', error);
+          // Tentar importar logger para logar o erro
+          try {
+            const loggerPath = process.env.VERCEL
+              ? './dist/utils/logger.js'
+              : '../dist/utils/logger.js';
+            const { logger } = await import(loggerPath);
+            logger.error('Erro ao inicializar app', error);
+          } catch (e) {
+            console.error('Erro ao importar logger:', e);
+          }
         }
       }
+      return appInstance;
     })();
   }
-  return connectionPromise;
-};
+  return initPromise;
+}
 
-// Inicializar conexão na primeira execução
-connectIfNeeded().catch(err => {
-  logger.error('Erro na inicialização do banco', err);
-});
-
-// Handler serverless para Vercel - exportar o app Express diretamente
+// Handler serverless para Vercel
 export default async function handler(req: any, res: any) {
-  // Garantir que está conectado antes de processar a requisição
-  await connectIfNeeded();
-  
-  // Passar a requisição para o Express
-  return app(req, res);
+  try {
+    const app = await getApp();
+    if (!app) {
+      res.status(500).json({ error: 'App não inicializado' });
+      return;
+    }
+    app(req, res);
+  } catch (error) {
+    console.error('Erro no handler:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 }
 

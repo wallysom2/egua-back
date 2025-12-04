@@ -57,3 +57,5 @@ app.get('/', (req: Request, res: Response) => {
 app.use(errorHandler);
 
 export { app };
+// Exportar também como default para compatibilidade com Vercel
+export default app;
