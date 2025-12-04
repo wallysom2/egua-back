@@ -5,7 +5,8 @@ node_modules
 # Ignore all files in the dist directory
 dist/*
 
-# Ignore all files in the dist directory
-dist/*
+# Ignore compiled files in api directory (Vercel compiles these automatically)
+api/*.js
+api/*.js.map
 
 
