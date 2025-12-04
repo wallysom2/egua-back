@@ -62,7 +62,7 @@ export async function analisarRespostaProgramacao(
             aprovado: false,
             feedback: 'Erro na análise automática. Resposta será revisada.',
             pontuacao: 0,
-            sugestoes: ['Aguarde a revisão manual', 'Verifique a sintaxe da linguagem Égua']
+            sugestoes: ['Aguarde a revisão manual', 'Verifique a sintaxe da linguagem Égua ']
         };
     }
 }
