@@ -17,7 +17,7 @@ export interface GoogleTokenPayload {
 }
 
 /**
- * Verificar e validar o token do Google
+ * Verificar e validar o token do Google (suporta ID Token e Access Token)
  */
 export const verificarTokenGoogle = async (token: string): Promise<GoogleTokenPayload | null> => {
   try {
@@ -26,27 +26,51 @@ export const verificarTokenGoogle = async (token: string): Promise<GoogleTokenPa
       return null;
     }
 
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: GOOGLE_CLIENT_ID,
-    });
+    // Primeiro, tenta verificar como ID Token
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: token,
+        audience: GOOGLE_CLIENT_ID,
+      });
 
-    const payload = ticket.getPayload();
-    if (!payload) {
-      return null;
+      const payload = ticket.getPayload();
+      if (payload && payload.email && payload.name && payload.sub) {
+        return {
+          email: payload.email,
+          name: payload.name,
+          picture: payload.picture,
+          sub: payload.sub,
+        };
+      }
+    } catch (idTokenError) {
+      // ID Token falhou, tentar como Access Token
+      logger.info('Token não é ID Token, tentando como Access Token...');
     }
 
-    if (!payload.email || !payload.name || !payload.sub) {
-      logger.error('Payload do Google incompleto');
-      return null;
+    // Se não for ID Token, tenta como Access Token chamando a API userinfo
+    try {
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const userInfo = await response.json();
+        if (userInfo.email && userInfo.name && userInfo.sub) {
+          return {
+            email: userInfo.email,
+            name: userInfo.name,
+            picture: userInfo.picture,
+            sub: userInfo.sub,
+          };
+        }
+      }
+    } catch (accessTokenError) {
+      logger.error('Erro ao verificar Access Token:', accessTokenError);
     }
 
-    return {
-      email: payload.email,
-      name: payload.name,
-      picture: payload.picture,
-      sub: payload.sub,
-    };
+    return null;
   } catch (error) {
     logger.error('Erro ao verificar token do Google:', error);
     return null;
