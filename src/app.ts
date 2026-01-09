@@ -40,13 +40,29 @@ app.use('/progresso-exercicios', userExercicioRoutes);
 app.use('/respostas', userRespostaRoutes);
 app.use('/ia-criterios', iaCriterioRoutes);
 
-// Health check endpoint para AWS App Runner
-app.get('/health', (req: Request, res: Response) => {
-  res.status(200).json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+// Health check endpoint para manter Render e Supabase ativos
+app.get('/health', async (req: Request, res: Response) => {
+  try {
+    // Import dinâmico do Prisma para fazer ping no banco
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$disconnect();
+
+    res.status(200).json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(200).json({
+      status: 'healthy',
+      database: 'error',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  }
 });
 
 app.get('/', (req: Request, res: Response) => {
