@@ -3,14 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model app {
   id      String  @id @db.Char(36)
-  nome    String  @unique(map: "nome") @db.VarChar(100)
-  api_key String  @unique(map: "api_key") @db.Char(36)
+  nome    String  @unique(map: "app_nome_key") @db.VarChar(100)
+  api_key String  @unique(map: "app_api_key_key") @db.Char(36)
   ativo   Boolean @default(true)
 }
 
@@ -18,12 +18,12 @@ model conteudo {
   id            Int                    @id @default(autoincrement())
   linguagem_id  Int
   titulo        String                 @db.VarChar(255)
-  corpo         String                 @db.LongText
+  corpo         String                 @db.Text
   nivel_leitura conteudo_nivel_leitura @default(basico)
   linguagem     linguagem              @relation(fields: [linguagem_id], references: [id], map: "conteudo_ibfk_1")
   questao       questao[]
 
-  @@index([linguagem_id], map: "linguagem_id")
+  @@index([linguagem_id], map: "conteudo_linguagem_id_idx")
 }
 
 model exercicio {
@@ -34,7 +34,7 @@ model exercicio {
   exercicio_questao exercicio_questao[]
   user_exercicio    user_exercicio[]
 
-  @@index([linguagem_id], map: "linguagem_id")
+  @@index([linguagem_id], map: "exercicio_linguagem_id_idx")
 }
 
 model exercicio_questao {
@@ -45,12 +45,12 @@ model exercicio_questao {
   questao      questao   @relation(fields: [questao_id], references: [id], map: "exercicio_questao_ibfk_2")
 
   @@id([exercicio_id, questao_id])
-  @@index([questao_id], map: "questao_id")
+  @@index([questao_id], map: "exercicio_questao_questao_id_idx")
 }
 
 model ia_criterio {
   id           Int            @id @default(autoincrement())
-  nome         String         @unique(map: "nome") @db.VarChar(100)
+  nome         String         @unique(map: "ia_criterio_nome_key") @db.VarChar(100)
   peso         Decimal        @default(1.00) @db.Decimal(5, 2)
   ia_evaluacao ia_evaluacao[]
 }
@@ -68,13 +68,13 @@ model ia_evaluacao {
   user_resposta       user_resposta @relation(fields: [user_resposta_id], references: [id], onDelete: Cascade, map: "ia_evaluacao_ibfk_1")
   ia_criterio         ia_criterio   @relation(fields: [criterio_id], references: [id], map: "ia_evaluacao_ibfk_2")
 
-  @@index([criterio_id], map: "criterio_id")
-  @@index([user_resposta_id], map: "user_resposta_id")
+  @@index([criterio_id], map: "ia_evaluacao_criterio_id_idx")
+  @@index([user_resposta_id], map: "ia_evaluacao_user_resposta_id_idx")
 }
 
 model linguagem {
   id        Int         @id @default(autoincrement())
-  nome      String      @unique(map: "nome") @db.VarChar(100)
+  nome      String      @unique(map: "linguagem_nome_key") @db.VarChar(100)
   conteudo  conteudo[]
   exercicio exercicio[]
 }
@@ -82,9 +82,9 @@ model linguagem {
 model questao {
   id                Int                 @id @default(autoincrement())
   conteudo_id       Int?
-  enunciado         String              @db.LongText
+  enunciado         String              @db.Text
   nivel             questao_nivel       @default(facil)
-  exemplo_resposta  String?             @db.LongText
+  exemplo_resposta  String?             @db.Text
   opcoes            Json?
   resposta_correta  String?             @db.Text
   tipo              questao_tipo        @default(quiz)
@@ -92,7 +92,7 @@ model questao {
   conteudo          conteudo?           @relation(fields: [conteudo_id], references: [id], map: "questao_ibfk_1")
   user_resposta     user_resposta[]
 
-  @@index([conteudo_id], map: "conteudo_id")
+  @@index([conteudo_id], map: "questao_conteudo_id_idx")
 }
 
 model user_exercicio {
@@ -106,37 +106,37 @@ model user_exercicio {
   exercicio     exercicio             @relation(fields: [exercicio_id], references: [id], map: "user_exercicio_ibfk_2")
   user_resposta user_resposta[]
 
-  @@index([exercicio_id], map: "exercicio_id")
-  @@index([usuario_id], map: "usuario_id")
+  @@index([exercicio_id], map: "user_exercicio_exercicio_id_idx")
+  @@index([usuario_id], map: "user_exercicio_usuario_id_idx")
 }
 
 model user_resposta {
   id                String         @id @db.Char(36)
   user_exercicio_id String         @db.Char(36)
   questao_id        Int
-  resposta          String         @db.LongText
+  resposta          String         @db.Text
   submetido_em      DateTime       @default(now())
   ia_evaluacao      ia_evaluacao[]
   user_exercicio    user_exercicio @relation(fields: [user_exercicio_id], references: [id], onDelete: Cascade, map: "user_resposta_ibfk_1")
   questao           questao        @relation(fields: [questao_id], references: [id], map: "user_resposta_ibfk_2")
 
-  @@index([questao_id], map: "questao_id")
-  @@index([user_exercicio_id], map: "user_exercicio_id")
+  @@index([questao_id], map: "user_resposta_questao_id_idx")
+  @@index([user_exercicio_id], map: "user_resposta_user_exercicio_id_idx")
 }
 
 model usuario {
   id                           String           @id @db.Char(36)
   nome                         String           @db.VarChar(255)
-  email                        String           @unique(map: "email") @db.VarChar(255)
+  email                        String           @unique(map: "usuario_email_key") @db.VarChar(255)
   senha_hash                   String?          @db.VarChar(255)
   tipo                         usuario_tipo
   ativo                        Boolean          @default(true)
   created_at                   DateTime         @default(now())
   updated_at                   DateTime         @default(now())
   reset_password_token         String?          @db.VarChar(255)
-  reset_password_token_expires DateTime?        @db.DateTime(0)
-  reset_password_requested_at  DateTime?        @db.DateTime(0)
-  google_id                    String?          @unique(map: "google_id") @db.VarChar(255)
+  reset_password_token_expires DateTime?        @db.Timestamp
+  reset_password_requested_at  DateTime?        @db.Timestamp
+  google_id                    String?          @unique(map: "usuario_google_id_key") @db.VarChar(255)
   user_exercicio               user_exercicio[]
 
   @@index([reset_password_token], map: "idx_usuario_reset_token")
