@@ -10,6 +10,7 @@ import { userRespostaRoutes } from './routes/userResposta.routes.js';
 import { iaCriterioRoutes } from './routes/iaCriterio.routes.js';
 import { autenticar } from './middlewares/auth.middleware.js';
 import { errorHandler } from './middlewares/error.middleware.js';
+import { prisma } from './utils/database.js';
 
 const app = express();
 
@@ -43,12 +44,7 @@ app.use('/ia-criterios', iaCriterioRoutes);
 // Health check endpoint para manter Render e Supabase ativos
 app.get('/health', async (req: Request, res: Response) => {
   try {
-    // Import dinâmico do Prisma para fazer ping no banco
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
     await prisma.$queryRaw`SELECT 1`;
-    await prisma.$disconnect();
-
     res.status(200).json({
       status: 'healthy',
       database: 'connected',
