@@ -1,7 +1,7 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 
 /**
- * Cliente Supabase para validação de tokens no backend
+ * Cliente Supabase para validação de tokens e gerenciamento de usuários no backend
  */
 class SupabaseAdmin {
     private client: SupabaseClient;
@@ -39,6 +39,36 @@ class SupabaseAdmin {
             console.error('Erro ao validar token Supabase:', error);
             return null;
         }
+    }
+
+    /**
+     * Lista todos os usuários (Admin API)
+     */
+    async listAllUsers() {
+        return await this.client.auth.admin.listUsers();
+    }
+
+    /**
+     * Obtém um usuário por ID (Admin API)
+     */
+    async getUserById(id: string) {
+        return await this.client.auth.admin.getUserById(id);
+    }
+
+    /**
+     * Atualiza os metadados do usuário (Admin API)
+     */
+    async updateUserMetadata(id: string, metadata: Record<string, unknown>) {
+        return await this.client.auth.admin.updateUserById(id, {
+            user_metadata: metadata,
+        });
+    }
+
+    /**
+     * Exclui um usuário (Admin API)
+     */
+    async deleteUser(id: string) {
+        return await this.client.auth.admin.deleteUser(id);
     }
 
     /**

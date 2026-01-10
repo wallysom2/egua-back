@@ -111,3 +111,21 @@ export function autorizarProfessorOuDesenvolvedor(
   }
   next();
 }
+
+/**
+ * Middleware genérico para autorizar tipos específicos de usuário
+ */
+export function autorizarTipos(tiposPermitidos: TipoUsuario[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const tipoUsuario = req.usuario?.tipo;
+
+    if (!tipoUsuario || !tiposPermitidos.includes(tipoUsuario)) {
+      res.status(403).json({
+        success: false,
+        message: `Acesso restrito a: ${tiposPermitidos.join(', ')}`
+      });
+      return;
+    }
+    next();
+  };
+}
