@@ -8,18 +8,16 @@ import {
 } from '../services/groq.service.js';
 import { logger } from '../utils/logger.js';
 
-// Extender a interface Request para incluir o usuário autenticado
-interface AuthenticatedRequest extends Request {
-  usuario?: { usuarioId: string; tipo: string };
-}
+// Usar o tipo global definido no auth.middleware.ts
+// Request.usuario está tipado com AuthenticatedUser
 
 export async function submeterResposta(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
   const { user_exercicio_id, questao_id, resposta } =
     req.body as SubmeterRespostaInput;
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
 
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });
@@ -98,11 +96,11 @@ export async function submeterResposta(
 }
 
 export async function obterAnaliseResposta(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
   const { respostaId } = req.params;
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
 
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });
@@ -223,11 +221,11 @@ export async function obterAnaliseResposta(
 }
 
 export async function listarRespostasPorProgresso(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
   const { userExercicioId } = req.params;
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
 
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });

@@ -45,15 +45,13 @@ export interface ResultadoFinalizacao {
 }
 
 export async function verificarUsuarioExiste(usuarioId: string) {
-  const usuario = await prisma.usuario.findUnique({
-    where: { id: usuarioId },
-  });
-
-  if (!usuario) {
+  // O usuário já é validado pelo middleware Supabase Auth
+  // Esta função apenas valida que temos um ID válido
+  if (!usuarioId || usuarioId.trim() === '') {
     throw new Error('Usuário não encontrado');
   }
 
-  return usuario;
+  return { id: usuarioId };
 }
 
 export async function verificarExercicioExiste(exercicioId: number) {

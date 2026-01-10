@@ -97,12 +97,11 @@ model questao {
 
 model user_exercicio {
   id            String                @id @db.Char(36)
-  usuario_id    String                @db.Char(36)
+  usuario_id    String                @db.Uuid // UUID do Supabase Auth
   exercicio_id  Int
   iniciado_em   DateTime              @default(now())
   finalizado_em DateTime?
   status        user_exercicio_status @default(em_andamento)
-  usuario       usuario               @relation(fields: [usuario_id], references: [id], onDelete: Cascade, map: "user_exercicio_ibfk_1")
   exercicio     exercicio             @relation(fields: [exercicio_id], references: [id], map: "user_exercicio_ibfk_2")
   user_resposta user_resposta[]
 
@@ -124,24 +123,16 @@ model user_resposta {
   @@index([user_exercicio_id], map: "user_resposta_user_exercicio_id_idx")
 }
 
-model usuario {
-  id                           String           @id @db.Char(36)
-  nome                         String           @db.VarChar(255)
-  email                        String           @unique(map: "usuario_email_key") @db.VarChar(255)
-  senha_hash                   String?          @db.VarChar(255)
-  tipo                         usuario_tipo
-  ativo                        Boolean          @default(true)
-  created_at                   DateTime         @default(now())
-  updated_at                   DateTime         @default(now())
-  reset_password_token         String?          @db.VarChar(255)
-  reset_password_token_expires DateTime?        @db.Timestamp
-  reset_password_requested_at  DateTime?        @db.Timestamp
-  google_id                    String?          @unique(map: "usuario_google_id_key") @db.VarChar(255)
-  user_exercicio               user_exercicio[]
+// Modelo para dados adicionais do usuário (opcional)
+// O Supabase Auth gerencia autenticação, este modelo armazena dados extras
+model usuario_perfil {
+  id         String       @id @db.Uuid // Mesmo ID do auth.users do Supabase
+  tipo       usuario_tipo @default(aluno)
+  ativo      Boolean      @default(true)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @default(now()) @updatedAt
 
-  @@index([reset_password_token], map: "idx_usuario_reset_token")
-  @@index([reset_password_token_expires], map: "idx_usuario_reset_token_expires")
-  @@index([google_id], map: "idx_usuario_google_id")
+  @@index([tipo], map: "idx_usuario_perfil_tipo")
 }
 
 enum questao_nivel {
