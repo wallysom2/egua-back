@@ -2,13 +2,11 @@ import { Request, Response } from 'express';
 import * as userExercicioService from '../services/userExercicio.service.js';
 import { prisma } from '../utils/database.js';
 
-// Extender a interface Request para incluir o usuário autenticado
-interface AuthenticatedRequest extends Request {
-  usuario?: { usuarioId: string; tipo: string };
-}
+// Usar o tipo global definido no auth.middleware.ts
+// Request.usuario está tipado com AuthenticatedUser
 
 export async function finalizarExercicio(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
   const { usuarioId, exercicioId } = req.params;
@@ -56,7 +54,7 @@ export async function finalizarExercicio(
 }
 
 export async function finalizarExercicioPorQuery(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
   const { usuarioId, exercicioId } = req.query;
@@ -104,10 +102,10 @@ export async function finalizarExercicioPorQuery(
 }
 
 export async function listarProgressoUsuario(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });
   }
@@ -127,11 +125,11 @@ export async function listarProgressoUsuario(
 }
 
 export async function obterStatusExercicio(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
   const { exercicioId } = req.params;
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
 
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });
@@ -153,10 +151,10 @@ export async function obterStatusExercicio(
 }
 
 export async function listarExerciciosConcluidos(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
 
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });
@@ -176,10 +174,10 @@ export async function listarExerciciosConcluidos(
 }
 
 export async function obterResumoProgresso(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
 
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });
@@ -198,11 +196,11 @@ export async function obterResumoProgresso(
 }
 
 export async function verificarEConcluirExercicio(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
   const { userExercicioId } = req.params;
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
 
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });
@@ -226,14 +224,6 @@ export async function verificarEConcluirExercicio(
         exercicio: {
           include: {
             exercicio_questao: true,
-          },
-        },
-        usuario: {
-          select: {
-            id: true,
-            nome: true,
-            email: true,
-            tipo: true,
           },
         },
         user_resposta: {
@@ -323,11 +313,11 @@ export async function verificarEConcluirExercicio(
 }
 
 export async function iniciarExercicio(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
 ) {
   const { exercicioId } = req.params;
-  const usuarioId = req.usuario?.usuarioId;
+  const usuarioId = req.usuario?.id;
 
   if (!usuarioId) {
     return res.status(403).json({ message: 'Usuário não autenticado' });

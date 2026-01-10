@@ -1,51 +1,112 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { getSupabaseAdmin } from '../services/supabase.service.js';
+import { TipoUsuario } from '../schema/usuario.schema.js';
 
-// Usar o mesmo segredo JWT que o serviço de auth
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+/**
+ * Interface para o usuário autenticado anexado à request
+ */
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  nome: string;
+  tipo: TipoUsuario;
+}
 
-export function autenticar(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) {
-    res.status(401).json({ message: 'Token não fornecido' });
-    return;
-  }
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    (req as any).usuario = decoded;
-    next();
-  } catch (error) {
-    console.error('Erro ao verificar token JWT:', error);
-    res.status(401).json({ message: 'Token inválido' });
+/**
+ * Extende a interface Request do Express para incluir o usuário
+ */
+declare global {
+  namespace Express {
+    interface Request {
+      usuario?: AuthenticatedUser;
+    }
   }
 }
 
+/**
+ * Middleware de autenticação usando tokens Supabase
+ * Valida o JWT e extrai informações do usuário
+ */
+export async function autenticar(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(' ')[1];
+
+  if (!token) {
+    res.status(401).json({
+      success: false,
+      message: 'Token não fornecido'
+    });
+    return;
+  }
+
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    const user = await supabaseAdmin.validateToken(token);
+
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        message: 'Token inválido ou expirado'
+      });
+      return;
+    }
+
+    // Extrair informações do user_metadata do Supabase
+    const userMetadata = user.user_metadata || {};
+
+    req.usuario = {
+      id: user.id,
+      email: user.email || '',
+      nome: userMetadata.nome || userMetadata.full_name || 'Usuário',
+      tipo: (userMetadata.tipo as TipoUsuario) || 'aluno',
+    };
+
+    next();
+  } catch (error) {
+    console.error('Erro ao verificar token Supabase:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Erro ao validar autenticação'
+    });
+  }
+}
+
+/**
+ * Middleware para autorizar apenas professores
+ */
 export function autorizarProfessor(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  if ((req as any).usuario?.tipo !== 'professor') {
-    res.status(403).json({ message: 'Acesso restrito a professores' });
+  if (req.usuario?.tipo !== 'professor') {
+    res.status(403).json({
+      success: false,
+      message: 'Acesso restrito a professores'
+    });
     return;
   }
   next();
 }
 
+/**
+ * Middleware para autorizar professores ou desenvolvedores
+ */
 export function autorizarProfessorOuDesenvolvedor(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  const tipoUsuario = (req as any).usuario?.tipo;
+  const tipoUsuario = req.usuario?.tipo;
   if (tipoUsuario !== 'professor' && tipoUsuario !== 'desenvolvedor') {
-    res
-      .status(403)
-      .json({ message: 'Acesso restrito a professores e desenvolvedores' });
+    res.status(403).json({
+      success: false,
+      message: 'Acesso restrito a professores e desenvolvedores'
+    });
     return;
   }
   next();
