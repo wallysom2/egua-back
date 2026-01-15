@@ -6,6 +6,7 @@ export async function listarExercicios(linguagemId?: string) {
   return await prisma.exercicio.findMany({
     where: linguagemId ? { linguagem_id: Number(linguagemId) } : {},
     include: {
+      linguagem: true,
       exercicio_questao: {
         include: { questao: true },
         orderBy: { ordem: 'asc' },
