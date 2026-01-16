@@ -33,6 +33,8 @@ model exercicio {
   linguagem         linguagem           @relation(fields: [linguagem_id], references: [id], map: "exercicio_ibfk_1")
   exercicio_questao exercicio_questao[]
   user_exercicio    user_exercicio[]
+  turma_exercicio   turma_exercicio[]
+  trilha_licao      trilha_licao[]
 
   @@index([linguagem_id], map: "exercicio_linguagem_id_idx")
 }
@@ -160,4 +162,113 @@ enum user_exercicio_status {
 enum questao_tipo {
   quiz
   programacao
+}
+
+// =============================================
+// SISTEMA DE TURMAS
+// =============================================
+
+// Turma criada por um professor
+model turma {
+  id            String   @id @db.Char(36)
+  nome          String   @db.VarChar(255)
+  descricao     String?  @db.Text
+  codigo_acesso String   @unique @db.VarChar(8) // Código para alunos entrarem
+  professor_id  String   @db.Uuid // ID do professor (auth.users do Supabase)
+  ativo         Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now()) @updatedAt
+
+  turma_aluno     turma_aluno[]
+  turma_exercicio turma_exercicio[]
+  trilha_modulo   trilha_modulo[]
+
+  @@index([professor_id], map: "idx_turma_professor")
+  @@index([codigo_acesso], map: "idx_turma_codigo")
+}
+
+// Relacionamento N:N entre turma e alunos
+model turma_aluno {
+  id             String   @id @db.Char(36)
+  turma_id       String   @db.Char(36)
+  aluno_id       String   @db.Uuid // ID do aluno (auth.users do Supabase)
+  matriculado_em DateTime @default(now())
+  ativo          Boolean  @default(true)
+
+  turma     turma             @relation(fields: [turma_id], references: [id], onDelete: Cascade)
+  progresso progresso_aluno[]
+
+  @@unique([turma_id, aluno_id])
+  @@index([turma_id], map: "idx_turma_aluno_turma")
+  @@index([aluno_id], map: "idx_turma_aluno_aluno")
+}
+
+// Exercícios associados a uma turma
+model turma_exercicio {
+  id           String   @id @db.Char(36)
+  turma_id     String   @db.Char(36)
+  exercicio_id Int
+  ordem        Int      @default(0)
+  obrigatorio  Boolean  @default(true)
+  created_at   DateTime @default(now())
+
+  turma     turma     @relation(fields: [turma_id], references: [id], onDelete: Cascade)
+  exercicio exercicio @relation(fields: [exercicio_id], references: [id], onDelete: Cascade)
+
+  @@unique([turma_id, exercicio_id])
+  @@index([turma_id], map: "idx_turma_exercicio_turma")
+}
+
+// Módulos da trilha de aprendizado (estilo Duolingo)
+model trilha_modulo {
+  id            String   @id @db.Char(36)
+  turma_id      String   @db.Char(36)
+  titulo        String   @db.VarChar(255)
+  descricao     String?  @db.Text
+  icone         String?  @db.VarChar(50) // Emoji ou nome do ícone
+  ordem         Int      @default(0)
+  xp_recompensa Int      @default(10)
+  ativo         Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  turma        turma          @relation(fields: [turma_id], references: [id], onDelete: Cascade)
+  trilha_licao trilha_licao[]
+
+  @@index([turma_id], map: "idx_trilha_modulo_turma")
+}
+
+// Lições dentro de cada módulo
+model trilha_licao {
+  id            String   @id @db.Char(36)
+  modulo_id     String   @db.Char(36)
+  exercicio_id  Int
+  ordem         Int      @default(0)
+  xp_recompensa Int      @default(5)
+  created_at    DateTime @default(now())
+
+  modulo    trilha_modulo     @relation(fields: [modulo_id], references: [id], onDelete: Cascade)
+  exercicio exercicio         @relation(fields: [exercicio_id], references: [id])
+  progresso progresso_aluno[]
+
+  @@index([modulo_id], map: "idx_trilha_licao_modulo")
+}
+
+// Progresso do aluno na trilha
+model progresso_aluno {
+  id             String    @id @db.Char(36)
+  turma_aluno_id String    @db.Char(36)
+  licao_id       String    @db.Char(36)
+  completado     Boolean   @default(false)
+  pontuacao      Int       @default(0)
+  xp_ganho       Int       @default(0)
+  tentativas     Int       @default(0)
+  completado_em  DateTime?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @default(now()) @updatedAt
+
+  turma_aluno turma_aluno  @relation(fields: [turma_aluno_id], references: [id], onDelete: Cascade)
+  licao       trilha_licao @relation(fields: [licao_id], references: [id], onDelete: Cascade)
+
+  @@unique([turma_aluno_id, licao_id])
+  @@index([turma_aluno_id], map: "idx_progresso_turma_aluno")
 }

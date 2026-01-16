@@ -9,6 +9,7 @@ import { userExercicioRoutes } from './routes/userExercicio.routes.js';
 import { userRespostaRoutes } from './routes/userResposta.routes.js';
 import { iaCriterioRoutes } from './routes/iaCriterio.routes.js';
 import { usuarioRoutes } from './routes/usuario.routes.js';
+import { turmaRoutes } from './routes/turma.routes.js';
 import { autenticar } from './middlewares/auth.middleware.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { prisma } from './utils/database.js';
@@ -42,6 +43,8 @@ app.use('/progresso-exercicios', userExercicioRoutes);
 app.use('/respostas', userRespostaRoutes);
 app.use('/ia-criterios', iaCriterioRoutes);
 app.use('/usuarios', usuarioRoutes);
+app.use('/turmas', turmaRoutes);
+
 
 // Health check endpoint para manter Render e Supabase ativos
 app.get('/health', async (req: Request, res: Response) => {

@@ -21,12 +21,6 @@ export interface ExercicioFinalizado {
       nome: string;
     };
   };
-  usuario: {
-    id: string;
-    nome: string;
-    email: string;
-    tipo: string;
-  };
   user_resposta: any[];
 }
 
@@ -77,14 +71,6 @@ export async function buscarProgressoExistente(
     },
     include: {
       exercicio: { include: { linguagem: true } },
-      usuario: {
-        select: {
-          id: true,
-          nome: true,
-          email: true,
-          tipo: true,
-        },
-      },
       user_resposta: {
         include: {
           questao: true,
@@ -110,14 +96,6 @@ export async function criarNovoProgresso(
     },
     include: {
       exercicio: { include: { linguagem: true } },
-      usuario: {
-        select: {
-          id: true,
-          nome: true,
-          email: true,
-          tipo: true,
-        },
-      },
       user_resposta: {
         include: {
           questao: true,
@@ -139,14 +117,6 @@ export async function atualizarProgressoExistente(
     },
     include: {
       exercicio: { include: { linguagem: true } },
-      usuario: {
-        select: {
-          id: true,
-          nome: true,
-          email: true,
-          tipo: true,
-        },
-      },
       user_resposta: {
         include: {
           questao: true,
@@ -260,14 +230,6 @@ export async function iniciarExercicio(
     },
     include: {
       exercicio: { include: { linguagem: true } },
-      usuario: {
-        select: {
-          id: true,
-          nome: true,
-          email: true,
-          tipo: true,
-        },
-      },
       user_resposta: {
         include: {
           questao: true,
