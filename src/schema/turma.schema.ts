@@ -19,7 +19,7 @@ export const entrarTurmaSchema = z.object({
   codigo_acesso: z
     .string()
     .transform((val) => val.trim().toUpperCase())
-    .pipe(z.string().length(8, 'Código deve ter 8 caracteres')),
+    .pipe(z.string().length(4, 'Código deve ter 4 caracteres')),
 });
 
 // =============================================

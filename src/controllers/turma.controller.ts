@@ -140,17 +140,22 @@ export async function atualizarTurma(req: Request, res: Response): Promise<void>
 export async function desativarTurma(req: Request, res: Response): Promise<void> {
     try {
         const { id } = req.params;
-        const professorId = req.usuario?.id;
+        const userId = req.usuario?.id;
+        const userTipo = req.usuario?.tipo;
 
-        if (!professorId) {
+        if (!userId) {
             res.status(401).json({ message: 'Não autenticado' });
             return;
         }
 
+        // Desenvolvedores podem excluir qualquer turma
+        // Professores só podem excluir suas próprias turmas
+        const professorId = userTipo === 'desenvolvedor' ? undefined : userId;
+
         const turma = await turmaService.desativarTurma(id, professorId);
 
         if (!turma) {
-            res.status(404).json({ message: 'Turma não encontrada' });
+            res.status(404).json({ message: 'Turma não encontrada ou sem permissão' });
             return;
         }
 
