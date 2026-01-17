@@ -91,7 +91,7 @@ interface LicaoComProgresso {
 function gerarCodigoAcesso(): string {
     const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let codigo = '';
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 4; i++) {
         codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
     }
     return codigo;
@@ -259,13 +259,26 @@ export async function atualizarTurma(
 
 /**
  * Desativar turma (soft delete)
+ * Se professorId for undefined, pula verificação de proprietário (dev mode)
  */
-export async function desativarTurma(turmaId: string, professorId: string) {
+export async function desativarTurma(turmaId: string, professorId?: string) {
     try {
-        const turma = await atualizarTurma(turmaId, professorId, { ativo: false });
-        if (turma) {
-            logger.info(`Turma desativada: ${turmaId}`);
+        // Se professorId foi fornecido, verifica propriedade
+        if (professorId) {
+            const turma = await atualizarTurma(turmaId, professorId, { ativo: false });
+            if (turma) {
+                logger.info(`Turma desativada: ${turmaId} pelo professor ${professorId}`);
+            }
+            return turma;
         }
+
+        // Modo desenvolvedor: desativa diretamente
+        const turma = await prisma.turma.update({
+            where: { id: turmaId },
+            data: { ativo: false, updated_at: new Date() },
+        });
+
+        logger.info(`Turma desativada: ${turmaId} (modo desenvolvedor)`);
         return turma;
     } catch (error) {
         logger.error('Erro ao desativar turma:', error);
