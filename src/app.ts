@@ -25,6 +25,27 @@ app.use(express.urlencoded({ extended: true }));
 // Rotas públicas (não precisam de autenticação)
 app.use('/api', router);
 
+// Health check endpoint - DEVE ficar antes do middleware de autenticação
+// Usado para wake-up do Render e monitoramento
+app.get('/health', async (req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: 'healthy',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(200).json({
+      status: 'healthy',
+      database: 'error',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  }
+});
+
 // Middleware de autenticação para rotas protegidas (excluindo /api/auth)
 app.use((req, res, next) => {
   // Pular autenticação para rotas de auth
@@ -44,27 +65,6 @@ app.use('/respostas', userRespostaRoutes);
 app.use('/ia-criterios', iaCriterioRoutes);
 app.use('/usuarios', usuarioRoutes);
 app.use('/turmas', turmaRoutes);
-
-
-// Health check endpoint para manter Render e Supabase ativos
-app.get('/health', async (req: Request, res: Response) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.status(200).json({
-      status: 'healthy',
-      database: 'connected',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime()
-    });
-  } catch (error) {
-    res.status(200).json({
-      status: 'healthy',
-      database: 'error',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime()
-    });
-  }
-});
 
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({ status: '🎯 Servidor rodando normalmente' });
