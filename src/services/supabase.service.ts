@@ -27,6 +27,18 @@ class SupabaseAdmin {
      */
     async validateToken(token: string) {
         try {
+            // Validação básica da estrutura do token
+            if (!token || token.trim() === '') {
+                console.error('Token vazio fornecido');
+                return null;
+            }
+
+            const tokenParts = token.split('.');
+            if (tokenParts.length !== 3) {
+                console.error(`Token malformado: esperado 3 partes, recebido ${tokenParts.length}`);
+                return null;
+            }
+
             const { data: { user }, error } = await this.client.auth.getUser(token);
 
             if (error) {

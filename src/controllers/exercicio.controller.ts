@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ExercicioInput } from '../schema/exercicio.schema.js';
 import * as exercicioService from '../services/exercicio.service.js';
+import * as userExercicioService from '../services/userExercicio.service.js';
 
 export async function listarExercicios(req: Request, res: Response) {
   const { linguagemId } = req.query;
@@ -51,5 +52,48 @@ export async function deletarExercicio(req: Request, res: Response) {
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: 'Erro ao deletar exercício', error });
+  }
+}
+
+export async function submeterExercicio(req: Request, res: Response) {
+  const { id } = req.params;
+  const usuarioId = req.usuario?.id;
+
+  if (!usuarioId) {
+    return res.status(403).json({ message: 'Usuário não autenticado' });
+  }
+
+  try {
+    // Verificar se o exercício existe
+    const exercicio = await exercicioService.buscarExercicioPorId(id);
+    if (!exercicio) {
+      return res.status(404).json({ message: 'Exercício não encontrado' });
+    }
+
+    // Finalizar o exercício usando o serviço de userExercicio
+    const resultado = await userExercicioService.finalizarExercicio({
+      usuarioId,
+      exercicioId: parseInt(id),
+    });
+
+    res.json({
+      message: 'Exercício submetido com sucesso',
+      data: resultado.progresso,
+      estatisticas: resultado.estatisticas,
+      tempo_total: resultado.tempo_total,
+    });
+  } catch (error) {
+    console.error('Erro ao submeter exercício:', error);
+
+    if (error instanceof Error) {
+      if (error.message === 'Exercício já foi concluído') {
+        return res.status(409).json({ message: error.message });
+      }
+    }
+
+    res.status(500).json({
+      message: 'Erro interno do servidor ao submeter exercício',
+      error,
+    });
   }
 } 
