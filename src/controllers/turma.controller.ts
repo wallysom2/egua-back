@@ -82,7 +82,7 @@ export async function buscarTurma(req: Request, res: Response): Promise<void> {
 
         // Se for professor ou desenvolvedor, verificar propriedade
         const professorId = userTipo === 'aluno' ? undefined : userId;
-        const turma = await turmaService.buscarTurmaPorId(id, professorId);
+        const turma = await turmaService.buscarTurmaPorId(id as string, professorId);
 
         if (!turma) {
             res.status(404).json({ message: 'Turma não encontrada' });
@@ -119,7 +119,7 @@ export async function atualizarTurma(req: Request, res: Response): Promise<void>
             return;
         }
 
-        const turma = await turmaService.atualizarTurma(id, professorId, validacao.data);
+        const turma = await turmaService.atualizarTurma(id as string, professorId, validacao.data);
 
         if (!turma) {
             res.status(404).json({ message: 'Turma não encontrada' });
@@ -152,7 +152,7 @@ export async function desativarTurma(req: Request, res: Response): Promise<void>
         // Professores só podem excluir suas próprias turmas
         const professorId = userTipo === 'desenvolvedor' ? undefined : userId;
 
-        const turma = await turmaService.desativarTurma(id, professorId);
+        const turma = await turmaService.desativarTurma(id as string, professorId);
 
         if (!turma) {
             res.status(404).json({ message: 'Turma não encontrada ou sem permissão' });
@@ -251,7 +251,7 @@ export async function listarAlunos(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const alunos = await turmaService.listarAlunosTurma(id, professorId);
+        const alunos = await turmaService.listarAlunosTurma(id as string, professorId);
 
         if (alunos === null) {
             res.status(404).json({ message: 'Turma não encontrada' });
@@ -279,7 +279,7 @@ export async function removerAluno(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const resultado = await turmaService.removerAlunoDaTurma(id, alunoId, professorId);
+        const resultado = await turmaService.removerAlunoDaTurma(id as string, alunoId as string, professorId);
 
         if (!resultado.success) {
             res.status(400).json({ message: resultado.message });
@@ -304,7 +304,7 @@ export async function removerAluno(req: Request, res: Response): Promise<void> {
 export async function listarExercicios(req: Request, res: Response): Promise<void> {
     try {
         const { id } = req.params;
-        const exercicios = await turmaService.listarExerciciosTurma(id);
+        const exercicios = await turmaService.listarExerciciosTurma(id as string);
         res.json(exercicios);
     } catch (error) {
         console.error('[ERROR] Erro ao listar exercícios:', error);
@@ -336,7 +336,7 @@ export async function adicionarExercicio(req: Request, res: Response): Promise<v
         }
 
         const turmaExercicio = await turmaService.adicionarExercicioTurma(
-            id,
+            id as string,
             professorId,
             validacao.data
         );
@@ -368,8 +368,8 @@ export async function removerExercicio(req: Request, res: Response): Promise<voi
         }
 
         const resultado = await turmaService.removerExercicioTurma(
-            id,
-            parseInt(exercicioId),
+            id as string,
+            parseInt(exercicioId as string),
             professorId
         );
 
@@ -396,7 +396,7 @@ export async function removerExercicio(req: Request, res: Response): Promise<voi
 export async function obterTrilha(req: Request, res: Response): Promise<void> {
     try {
         const { id } = req.params;
-        const trilha = await turmaService.obterTrilha(id);
+        const trilha = await turmaService.obterTrilha(id as string);
         res.json(trilha);
     } catch (error) {
         console.error('[ERROR] Erro ao obter trilha:', error);
@@ -427,7 +427,7 @@ export async function criarModulo(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const modulo = await turmaService.criarModulo(id, professorId, validacao.data);
+        const modulo = await turmaService.criarModulo(id as string, professorId, validacao.data);
 
         if (!modulo) {
             res.status(404).json({ message: 'Turma não encontrada' });
@@ -464,7 +464,7 @@ export async function atualizarModulo(req: Request, res: Response): Promise<void
             return;
         }
 
-        const modulo = await turmaService.atualizarModulo(moduloId, professorId, validacao.data);
+        const modulo = await turmaService.atualizarModulo(moduloId as string, professorId, validacao.data);
 
         if (!modulo) {
             res.status(404).json({ message: 'Módulo não encontrado' });
@@ -492,7 +492,7 @@ export async function removerModulo(req: Request, res: Response): Promise<void> 
             return;
         }
 
-        const resultado = await turmaService.removerModulo(moduloId, professorId);
+        const resultado = await turmaService.removerModulo(moduloId as string, professorId);
 
         if (!resultado.success) {
             res.status(400).json({ message: resultado.message });
@@ -529,7 +529,7 @@ export async function criarLicao(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const licao = await turmaService.criarLicao(moduloId, professorId, validacao.data);
+        const licao = await turmaService.criarLicao(moduloId as string, professorId, validacao.data);
 
         if (!licao) {
             res.status(404).json({ message: 'Módulo não encontrado' });
@@ -557,7 +557,7 @@ export async function removerLicao(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const resultado = await turmaService.removerLicao(licaoId, professorId);
+        const resultado = await turmaService.removerLicao(licaoId as string, professorId);
 
         if (!resultado.success) {
             res.status(400).json({ message: resultado.message });
@@ -589,7 +589,7 @@ export async function obterMeuProgresso(req: Request, res: Response): Promise<vo
             return;
         }
 
-        const progresso = await turmaService.obterProgressoAluno(id, alunoId);
+        const progresso = await turmaService.obterProgressoAluno(id as string, alunoId as string);
 
         if (!progresso) {
             res.status(404).json({ message: 'Você não está matriculado nesta turma' });
@@ -627,9 +627,9 @@ export async function registrarProgresso(req: Request, res: Response): Promise<v
         }
 
         const resultado = await turmaService.registrarProgresso(
-            id,
-            licaoId,
-            alunoId,
+            id as string,
+            licaoId as string,
+            alunoId as string,
             validacao.data
         );
 

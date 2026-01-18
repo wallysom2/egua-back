@@ -16,7 +16,7 @@ export async function listarExercicios(req: Request, res: Response) {
 export async function buscarExercicioPorId(req: Request, res: Response) {
   const { id } = req.params;
   try {
-    const exercicio = await exercicioService.buscarExercicioPorId(id);
+    const exercicio = await exercicioService.buscarExercicioPorId(id as string);
     if (!exercicio) return res.status(404).json({ message: 'Exercício não encontrado' });
     res.json(exercicio);
   } catch (error) {
@@ -37,7 +37,7 @@ export async function criarExercicio(req: Request, res: Response) {
 export async function atualizarExercicio(req: Request, res: Response) {
   const { id } = req.params;
   try {
-    const exercicio = await exercicioService.atualizarExercicio(id, req.body as ExercicioInput);
+    const exercicio = await exercicioService.atualizarExercicio(id as string, req.body as ExercicioInput);
     res.json(exercicio);
   } catch (error) {
     console.error('[ERROR] - Prisma Error', error);
@@ -48,7 +48,7 @@ export async function atualizarExercicio(req: Request, res: Response) {
 export async function deletarExercicio(req: Request, res: Response) {
   const { id } = req.params;
   try {
-    await exercicioService.deletarExercicio(id);
+    await exercicioService.deletarExercicio(id as string);
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: 'Erro ao deletar exercício', error });
@@ -65,7 +65,7 @@ export async function submeterExercicio(req: Request, res: Response) {
 
   try {
     // Verificar se o exercício existe
-    const exercicio = await exercicioService.buscarExercicioPorId(id);
+    const exercicio = await exercicioService.buscarExercicioPorId(id as string);
     if (!exercicio) {
       return res.status(404).json({ message: 'Exercício não encontrado' });
     }
@@ -73,7 +73,7 @@ export async function submeterExercicio(req: Request, res: Response) {
     // Finalizar o exercício usando o serviço de userExercicio
     const resultado = await userExercicioService.finalizarExercicio({
       usuarioId,
-      exercicioId: parseInt(id),
+      exercicioId: parseInt(id as string),
     });
 
     res.json({

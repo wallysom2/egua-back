@@ -21,8 +21,8 @@ export async function finalizarExercicio(
 
   try {
     const resultado = await userExercicioService.finalizarExercicio({
-      usuarioId,
-      exercicioId: parseInt(exercicioId),
+      usuarioId: usuarioId as string,
+      exercicioId: parseInt(exercicioId as string),
     });
 
     res.json({
@@ -138,7 +138,7 @@ export async function obterStatusExercicio(
   try {
     const status = await userExercicioService.obterStatusExercicio(
       usuarioId,
-      parseInt(exercicioId),
+      parseInt(exercicioId as string),
     );
     res.json(status);
   } catch (error) {
@@ -216,7 +216,7 @@ export async function verificarEConcluirExercicio(
     // Buscar o progresso com todas as informações necessárias
     const progresso = await prisma.user_exercicio.findFirst({
       where: {
-        id: userExercicioId,
+        id: userExercicioId as string,
         usuario_id: usuarioId,
         status: 'em_andamento',
       },
@@ -262,7 +262,7 @@ export async function verificarEConcluirExercicio(
     if (todasQuestoesRespondidas && todasRespostasAprovadas) {
       // Marcar exercício como concluído automaticamente
       const progressoAtualizado =
-        await userExercicioService.atualizarProgressoExistente(userExercicioId);
+        await userExercicioService.atualizarProgressoExistente(userExercicioId as string);
       const estatisticas = userExercicioService.calcularEstatisticas(
         progressoAtualizado.user_resposta,
       );
@@ -330,7 +330,7 @@ export async function iniciarExercicio(
   try {
     const progresso = await userExercicioService.iniciarExercicio(
       usuarioId,
-      parseInt(exercicioId),
+      parseInt(exercicioId as string),
     );
 
     res.json({
