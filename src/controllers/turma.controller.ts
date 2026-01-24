@@ -176,19 +176,14 @@ export async function desativarTurma(req: Request, res: Response): Promise<void>
  */
 export async function entrarNaTurma(req: Request, res: Response): Promise<void> {
     try {
-        console.log('[DEBUG] entrarNaTurma - Body recebido:', JSON.stringify(req.body));
-        console.log('[DEBUG] entrarNaTurma - Usuario:', req.usuario);
-
         const alunoId = req.usuario?.id;
         if (!alunoId) {
-            console.log('[DEBUG] entrarNaTurma - Usuário não autenticado');
             res.status(401).json({ message: 'Não autenticado' });
             return;
         }
 
         const validacao = entrarTurmaSchema.safeParse(req.body);
         if (!validacao.success) {
-            console.log('[DEBUG] entrarNaTurma - Validação falhou:', validacao.error.errors);
             res.status(400).json({
                 message: 'Dados inválidos',
                 errors: validacao.error.errors,
@@ -196,14 +191,10 @@ export async function entrarNaTurma(req: Request, res: Response): Promise<void> 
             return;
         }
 
-        console.log('[DEBUG] entrarNaTurma - Código validado:', validacao.data.codigo_acesso);
-
         const resultado = await turmaService.entrarNaTurma(
             alunoId,
             validacao.data.codigo_acesso
         );
-
-        console.log('[DEBUG] entrarNaTurma - Resultado do service:', resultado);
 
         if (!resultado.success) {
             res.status(400).json({ message: resultado.message });
