@@ -6,9 +6,12 @@ export const exercicioSchema = z.object({
     .min(3, {
       message: 'Título do exercício deve ter pelo menos 3 caracteres',
     }),
+  descricao: z.string().optional(),
   linguagem_id: z.number({
     required_error: 'Linguagem do exercício é obrigatória',
   }),
+  tipo: z.enum(['quiz', 'pratico', 'texto_livre']).optional().default('quiz'),
+  dificuldade: z.enum(['facil', 'medio', 'dificil']).optional().default('medio'),
   questoes: z
     .array(
       z.object({
@@ -16,7 +19,8 @@ export const exercicioSchema = z.object({
         ordem: z.number().optional().default(0),
       }),
     )
-    .min(1, { message: 'Exercício deve ter pelo menos uma questão' }),
+    .optional()
+    .default([]),
 });
 
 export type ExercicioInput = z.infer<typeof exercicioSchema>;

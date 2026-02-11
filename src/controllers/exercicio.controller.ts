@@ -24,6 +24,50 @@ export async function buscarExercicioPorId(req: Request, res: Response) {
   }
 }
 
+export async function buscarQuestoesDoExercicio(req: Request, res: Response) {
+  const { id } = req.params;
+  try {
+    const questoes = await exercicioService.buscarQuestoesDoExercicio(id as string);
+    if (!questoes) return res.status(404).json({ message: 'Exercício não encontrado' });
+    res.json(questoes);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao buscar questões', error });
+  }
+}
+
+export async function adicionarQuestaoAoExercicio(req: Request, res: Response) {
+  const { id } = req.params;
+  const { questao_id, ordem } = req.body;
+
+  if (!questao_id) {
+    return res.status(400).json({ message: 'questao_id é obrigatório' });
+  }
+
+  try {
+    const resultado = await exercicioService.adicionarQuestaoAoExercicio(
+      id as string,
+      questao_id,
+      ordem
+    );
+    res.status(201).json(resultado);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('já está vinculada')) {
+      return res.status(409).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Erro ao adicionar questão ao exercício', error });
+  }
+}
+
+export async function removerQuestaoDoExercicio(req: Request, res: Response) {
+  const { id, questaoId } = req.params;
+  try {
+    await exercicioService.removerQuestaoDoExercicio(id as string, Number(questaoId));
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao remover questão do exercício', error });
+  }
+}
+
 export async function criarExercicio(req: Request, res: Response) {
   try {
     const exercicio = await exercicioService.criarExercicio(req.body as ExercicioInput);

@@ -12,6 +12,79 @@ import {
 } from '../schema/turma.schema.js';
 
 // =============================================
+// TURMA PADRÃO / TRILHA INICIAL
+// =============================================
+
+/**
+ * Obter trilha inicial (turma padrão) com progresso do aluno
+ * GET /turmas/trilha-inicial
+ */
+export async function obterTrilhaInicial(req: Request, res: Response): Promise<void> {
+    try {
+        const alunoId = req.usuario?.id;
+        if (!alunoId) {
+            res.status(401).json({ message: 'Não autenticado' });
+            return;
+        }
+
+        const resultado = await turmaService.obterTrilhaInicial(alunoId);
+
+        if (!resultado.success) {
+            res.status(404).json({ message: resultado.message });
+            return;
+        }
+
+        res.json(resultado);
+    } catch (error) {
+        console.error('[ERROR] Erro ao obter trilha inicial:', error);
+        res.status(500).json({ message: 'Erro ao obter trilha inicial' });
+    }
+}
+
+/**
+ * Obter turma padrão (informações)
+ * GET /turmas/padrao
+ */
+export async function obterTurmaPadrao(req: Request, res: Response): Promise<void> {
+    try {
+        const turma = await turmaService.buscarTurmaPadrao();
+
+        if (!turma) {
+            res.status(404).json({ message: 'Nenhuma turma padrão configurada' });
+            return;
+        }
+
+        res.json(turma);
+    } catch (error) {
+        console.error('[ERROR] Erro ao obter turma padrão:', error);
+        res.status(500).json({ message: 'Erro ao obter turma padrão' });
+    }
+}
+
+/**
+ * Definir turma como padrão (apenas desenvolvedores)
+ * POST /turmas/:id/definir-padrao
+ */
+export async function definirTurmaPadrao(req: Request, res: Response): Promise<void> {
+    try {
+        const { id } = req.params;
+        const tipoUsuario = req.usuario?.tipo;
+
+        if (tipoUsuario !== 'desenvolvedor') {
+            res.status(403).json({ message: 'Apenas desenvolvedores podem definir turma padrão' });
+            return;
+        }
+
+        const turma = await turmaService.definirTurmaPadrao(id as string);
+
+        res.json({ message: 'Turma definida como padrão', turma });
+    } catch (error) {
+        console.error('[ERROR] Erro ao definir turma padrão:', error);
+        res.status(500).json({ message: 'Erro ao definir turma padrão' });
+    }
+}
+
+// =============================================
 // CRUD DE TURMA
 // =============================================
 
@@ -103,9 +176,10 @@ export async function buscarTurma(req: Request, res: Response): Promise<void> {
 export async function atualizarTurma(req: Request, res: Response): Promise<void> {
     try {
         const { id } = req.params;
-        const professorId = req.usuario?.id;
+        const usuarioId = req.usuario?.id;
+        const tipoUsuario = req.usuario?.tipo;
 
-        if (!professorId) {
+        if (!usuarioId) {
             res.status(401).json({ message: 'Não autenticado' });
             return;
         }
@@ -119,7 +193,7 @@ export async function atualizarTurma(req: Request, res: Response): Promise<void>
             return;
         }
 
-        const turma = await turmaService.atualizarTurma(id as string, professorId, validacao.data);
+        const turma = await turmaService.atualizarTurma(id as string, usuarioId, validacao.data, tipoUsuario);
 
         if (!turma) {
             res.status(404).json({ message: 'Turma não encontrada' });
@@ -402,9 +476,10 @@ export async function obterTrilha(req: Request, res: Response): Promise<void> {
 export async function criarModulo(req: Request, res: Response): Promise<void> {
     try {
         const { id } = req.params;
-        const professorId = req.usuario?.id;
+        const usuarioId = req.usuario?.id;
+        const tipoUsuario = req.usuario?.tipo;
 
-        if (!professorId) {
+        if (!usuarioId) {
             res.status(401).json({ message: 'Não autenticado' });
             return;
         }
@@ -418,7 +493,7 @@ export async function criarModulo(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const modulo = await turmaService.criarModulo(id as string, professorId, validacao.data);
+        const modulo = await turmaService.criarModulo(id as string, usuarioId, validacao.data, tipoUsuario);
 
         if (!modulo) {
             res.status(404).json({ message: 'Turma não encontrada' });
@@ -439,9 +514,10 @@ export async function criarModulo(req: Request, res: Response): Promise<void> {
 export async function atualizarModulo(req: Request, res: Response): Promise<void> {
     try {
         const { moduloId } = req.params;
-        const professorId = req.usuario?.id;
+        const usuarioId = req.usuario?.id;
+        const tipoUsuario = req.usuario?.tipo;
 
-        if (!professorId) {
+        if (!usuarioId) {
             res.status(401).json({ message: 'Não autenticado' });
             return;
         }
@@ -455,7 +531,7 @@ export async function atualizarModulo(req: Request, res: Response): Promise<void
             return;
         }
 
-        const modulo = await turmaService.atualizarModulo(moduloId as string, professorId, validacao.data);
+        const modulo = await turmaService.atualizarModulo(moduloId as string, usuarioId, validacao.data, tipoUsuario);
 
         if (!modulo) {
             res.status(404).json({ message: 'Módulo não encontrado' });
@@ -476,14 +552,15 @@ export async function atualizarModulo(req: Request, res: Response): Promise<void
 export async function removerModulo(req: Request, res: Response): Promise<void> {
     try {
         const { moduloId } = req.params;
-        const professorId = req.usuario?.id;
+        const usuarioId = req.usuario?.id;
+        const tipoUsuario = req.usuario?.tipo;
 
-        if (!professorId) {
+        if (!usuarioId) {
             res.status(401).json({ message: 'Não autenticado' });
             return;
         }
 
-        const resultado = await turmaService.removerModulo(moduloId as string, professorId);
+        const resultado = await turmaService.removerModulo(moduloId as string, usuarioId, tipoUsuario);
 
         if (!resultado.success) {
             res.status(400).json({ message: resultado.message });
@@ -504,9 +581,10 @@ export async function removerModulo(req: Request, res: Response): Promise<void> 
 export async function criarLicao(req: Request, res: Response): Promise<void> {
     try {
         const { moduloId } = req.params;
-        const professorId = req.usuario?.id;
+        const usuarioId = req.usuario?.id;
+        const tipoUsuario = req.usuario?.tipo;
 
-        if (!professorId) {
+        if (!usuarioId) {
             res.status(401).json({ message: 'Não autenticado' });
             return;
         }
@@ -520,7 +598,7 @@ export async function criarLicao(req: Request, res: Response): Promise<void> {
             return;
         }
 
-        const licao = await turmaService.criarLicao(moduloId as string, professorId, validacao.data);
+        const licao = await turmaService.criarLicao(moduloId as string, usuarioId, validacao.data, tipoUsuario);
 
         if (!licao) {
             res.status(404).json({ message: 'Módulo não encontrado' });
@@ -541,14 +619,15 @@ export async function criarLicao(req: Request, res: Response): Promise<void> {
 export async function removerLicao(req: Request, res: Response): Promise<void> {
     try {
         const { licaoId } = req.params;
-        const professorId = req.usuario?.id;
+        const usuarioId = req.usuario?.id;
+        const tipoUsuario = req.usuario?.tipo;
 
-        if (!professorId) {
+        if (!usuarioId) {
             res.status(401).json({ message: 'Não autenticado' });
             return;
         }
 
-        const resultado = await turmaService.removerLicao(licaoId as string, professorId);
+        const resultado = await turmaService.removerLicao(licaoId as string, usuarioId, tipoUsuario);
 
         if (!resultado.success) {
             res.status(400).json({ message: resultado.message });

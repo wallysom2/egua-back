@@ -122,6 +122,188 @@ async function gerarCodigoUnico(): Promise<string> {
 }
 
 // =============================================
+// TURMA PADRÃO
+// =============================================
+
+/**
+ * Buscar a turma padrão do sistema
+ */
+export async function buscarTurmaPadrao() {
+    try {
+        const turma = await prisma.turma.findFirst({
+            where: {
+                is_padrao: true,
+                ativo: true,
+            },
+            include: {
+                _count: {
+                    select: {
+                        turma_aluno: { where: { ativo: true } },
+                        turma_exercicio: true,
+                        trilha_modulo: { where: { ativo: true } },
+                    },
+                },
+                trilha_modulo: {
+                    where: { ativo: true },
+                    orderBy: { ordem: 'asc' },
+                    include: {
+                        trilha_licao: {
+                            orderBy: { ordem: 'asc' },
+                            include: {
+                                exercicio: {
+                                    select: { id: true, titulo: true },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return turma;
+    } catch (error) {
+        logger.error('Erro ao buscar turma padrão:', error);
+        throw error;
+    }
+}
+
+/**
+ * Definir uma turma como padrão (remove o status de outras)
+ * Apenas desenvolvedores podem fazer isso
+ */
+export async function definirTurmaPadrao(turmaId: string) {
+    try {
+        // Remover is_padrao de todas as turmas
+        await prisma.turma.updateMany({
+            where: { is_padrao: true },
+            data: { is_padrao: false },
+        });
+
+        // Definir a turma especificada como padrão
+        const turma = await prisma.turma.update({
+            where: { id: turmaId },
+            data: { is_padrao: true, updated_at: new Date() },
+        });
+
+        logger.info(`Turma ${turmaId} definida como padrão`);
+        return turma;
+    } catch (error) {
+        logger.error('Erro ao definir turma padrão:', error);
+        throw error;
+    }
+}
+
+/**
+ * Garante que o aluno está inscrito na turma padrão
+ * Retorna a matrícula (existente ou nova)
+ */
+export async function garantirInscricaoTurmaPadrao(alunoId: string) {
+    try {
+        const turmaPadrao = await prisma.turma.findFirst({
+            where: { is_padrao: true, ativo: true },
+        });
+
+        if (!turmaPadrao) {
+            logger.warn('Nenhuma turma padrão configurada');
+            return null;
+        }
+
+        // Verificar se já está matriculado
+        const matriculaExistente = await prisma.turma_aluno.findUnique({
+            where: {
+                turma_id_aluno_id: {
+                    turma_id: turmaPadrao.id,
+                    aluno_id: alunoId,
+                },
+            },
+        });
+
+        if (matriculaExistente) {
+            // Reativar se estiver inativa
+            if (!matriculaExistente.ativo) {
+                await prisma.turma_aluno.update({
+                    where: { id: matriculaExistente.id },
+                    data: { ativo: true },
+                });
+            }
+            return { matricula: matriculaExistente, turma: turmaPadrao };
+        }
+
+        // Criar nova matrícula
+        const novaMatricula = await prisma.turma_aluno.create({
+            data: {
+                id: uuidv4(),
+                turma_id: turmaPadrao.id,
+                aluno_id: alunoId,
+            },
+        });
+
+        logger.info(`Aluno ${alunoId} auto-inscrito na turma padrão ${turmaPadrao.id}`);
+        return { matricula: novaMatricula, turma: turmaPadrao };
+    } catch (error) {
+        logger.error('Erro ao garantir inscrição na turma padrão:', error);
+        throw error;
+    }
+}
+
+/**
+ * Obter trilha inicial (turma padrão) com progresso do aluno
+ */
+export async function obterTrilhaInicial(alunoId: string) {
+    try {
+        // Garantir que o aluno está inscrito na turma padrão
+        const inscricao = await garantirInscricaoTurmaPadrao(alunoId);
+
+        if (!inscricao) {
+            return { success: false, message: 'Nenhuma turma padrão configurada' };
+        }
+
+        // Buscar progresso do aluno na turma padrão
+        const progresso = await obterProgressoAluno(inscricao.turma.id, alunoId);
+
+        return {
+            success: true,
+            turma: inscricao.turma,
+            progresso,
+        };
+    } catch (error) {
+        logger.error('Erro ao obter trilha inicial:', error);
+        throw error;
+    }
+}
+
+/**
+ * Verifica se o usuário tem permissão para editar a turma padrão
+ * Admins (desenvolvedores e professores) podem editar
+ */
+export async function verificarPermissaoTurmaPadrao(turmaId: string, usuarioId: string, tipoUsuario: string): Promise<boolean> {
+    try {
+        const turma = await prisma.turma.findUnique({
+            where: { id: turmaId },
+        });
+
+        if (!turma) {
+            return false;
+        }
+
+        // Se for a turma padrão, qualquer admin pode editar
+        if (turma.is_padrao) {
+            return tipoUsuario === 'desenvolvedor' || tipoUsuario === 'professor';
+        }
+
+        // Turma normal: só o dono ou desenvolvedor
+        if (tipoUsuario === 'desenvolvedor') {
+            return true;
+        }
+
+        return turma.professor_id === usuarioId;
+    } catch (error) {
+        logger.error('Erro ao verificar permissão:', error);
+        return false;
+    }
+}
+
+// =============================================
 // CRUD DE TURMA
 // =============================================
 
@@ -225,19 +407,35 @@ export async function buscarTurmaPorId(turmaId: string, professorId?: string) {
 
 /**
  * Atualizar turma
+ * Para turma padrão: qualquer professor ou desenvolvedor pode editar
+ * Para turma normal: apenas o dono ou desenvolvedor
  */
 export async function atualizarTurma(
     turmaId: string,
-    professorId: string,
-    dados: AtualizarTurmaInput
+    usuarioId: string,
+    dados: AtualizarTurmaInput,
+    tipoUsuario?: string
 ) {
     try {
-        // Verificar se o professor é o dono
-        const turmaExistente = await prisma.turma.findFirst({
-            where: { id: turmaId, professor_id: professorId },
+        const turmaExistente = await prisma.turma.findUnique({
+            where: { id: turmaId },
         });
 
         if (!turmaExistente) {
+            return null;
+        }
+
+        // Verificar permissão
+        let temPermissao = false;
+        if (turmaExistente.is_padrao) {
+            // Turma padrão: qualquer admin pode editar
+            temPermissao = tipoUsuario === 'desenvolvedor' || tipoUsuario === 'professor';
+        } else {
+            // Turma normal: dono ou desenvolvedor
+            temPermissao = turmaExistente.professor_id === usuarioId || tipoUsuario === 'desenvolvedor';
+        }
+
+        if (!temPermissao) {
             return null;
         }
 
@@ -717,19 +915,32 @@ export async function obterTrilha(turmaId: string) {
 
 /**
  * Criar módulo na trilha
+ * Para turma padrão: qualquer admin pode criar
  */
 export async function criarModulo(
     turmaId: string,
-    professorId: string,
-    dados: CriarModuloInput
+    usuarioId: string,
+    dados: CriarModuloInput,
+    tipoUsuario?: string
 ) {
     try {
-        // Verificar se o professor é o dono
-        const turma = await prisma.turma.findFirst({
-            where: { id: turmaId, professor_id: professorId },
+        const turma = await prisma.turma.findUnique({
+            where: { id: turmaId },
         });
 
         if (!turma) {
+            return null;
+        }
+
+        // Verificar permissão
+        let temPermissao = false;
+        if (turma.is_padrao) {
+            temPermissao = tipoUsuario === 'desenvolvedor' || tipoUsuario === 'professor';
+        } else {
+            temPermissao = turma.professor_id === usuarioId || tipoUsuario === 'desenvolvedor';
+        }
+
+        if (!temPermissao) {
             return null;
         }
 
@@ -755,20 +966,33 @@ export async function criarModulo(
 
 /**
  * Atualizar módulo
+ * Para turma padrão: qualquer admin pode atualizar
  */
 export async function atualizarModulo(
     moduloId: string,
-    professorId: string,
-    dados: AtualizarModuloInput
+    usuarioId: string,
+    dados: AtualizarModuloInput,
+    tipoUsuario?: string
 ) {
     try {
-        // Verificar se o módulo existe e pertence ao professor
         const modulo = await prisma.trilha_modulo.findFirst({
             where: { id: moduloId },
             include: { turma: true },
         });
 
-        if (!modulo || modulo.turma.professor_id !== professorId) {
+        if (!modulo) {
+            return null;
+        }
+
+        // Verificar permissão
+        let temPermissao = false;
+        if (modulo.turma.is_padrao) {
+            temPermissao = tipoUsuario === 'desenvolvedor' || tipoUsuario === 'professor';
+        } else {
+            temPermissao = modulo.turma.professor_id === usuarioId || tipoUsuario === 'desenvolvedor';
+        }
+
+        if (!temPermissao) {
             return null;
         }
 
@@ -787,15 +1011,28 @@ export async function atualizarModulo(
 
 /**
  * Remover módulo
+ * Para turma padrão: qualquer admin pode remover
  */
-export async function removerModulo(moduloId: string, professorId: string) {
+export async function removerModulo(moduloId: string, usuarioId: string, tipoUsuario?: string) {
     try {
         const modulo = await prisma.trilha_modulo.findFirst({
             where: { id: moduloId },
             include: { turma: true },
         });
 
-        if (!modulo || modulo.turma.professor_id !== professorId) {
+        if (!modulo) {
+            return { success: false, message: 'Módulo não encontrado' };
+        }
+
+        // Verificar permissão
+        let temPermissao = false;
+        if (modulo.turma.is_padrao) {
+            temPermissao = tipoUsuario === 'desenvolvedor' || tipoUsuario === 'professor';
+        } else {
+            temPermissao = modulo.turma.professor_id === usuarioId || tipoUsuario === 'desenvolvedor';
+        }
+
+        if (!temPermissao) {
             return { success: false, message: 'Módulo não encontrado' };
         }
 
@@ -815,20 +1052,33 @@ export async function removerModulo(moduloId: string, professorId: string) {
 
 /**
  * Criar lição em um módulo
+ * Para turma padrão: qualquer admin pode criar
  */
 export async function criarLicao(
     moduloId: string,
-    professorId: string,
-    dados: CriarLicaoInput
+    usuarioId: string,
+    dados: CriarLicaoInput,
+    tipoUsuario?: string
 ) {
     try {
-        // Verificar se o módulo existe e pertence ao professor
         const modulo = await prisma.trilha_modulo.findFirst({
             where: { id: moduloId },
             include: { turma: true },
         });
 
-        if (!modulo || modulo.turma.professor_id !== professorId) {
+        if (!modulo) {
+            return null;
+        }
+
+        // Verificar permissão
+        let temPermissao = false;
+        if (modulo.turma.is_padrao) {
+            temPermissao = tipoUsuario === 'desenvolvedor' || tipoUsuario === 'professor';
+        } else {
+            temPermissao = modulo.turma.professor_id === usuarioId || tipoUsuario === 'desenvolvedor';
+        }
+
+        if (!temPermissao) {
             return null;
         }
 
@@ -864,8 +1114,9 @@ export async function criarLicao(
 
 /**
  * Remover lição
+ * Para turma padrão: qualquer admin pode remover
  */
-export async function removerLicao(licaoId: string, professorId: string) {
+export async function removerLicao(licaoId: string, usuarioId: string, tipoUsuario?: string) {
     try {
         const licao = await prisma.trilha_licao.findFirst({
             where: { id: licaoId },
@@ -876,7 +1127,19 @@ export async function removerLicao(licaoId: string, professorId: string) {
             },
         });
 
-        if (!licao || licao.modulo.turma.professor_id !== professorId) {
+        if (!licao) {
+            return { success: false, message: 'Lição não encontrada' };
+        }
+
+        // Verificar permissão
+        let temPermissao = false;
+        if (licao.modulo.turma.is_padrao) {
+            temPermissao = tipoUsuario === 'desenvolvedor' || tipoUsuario === 'professor';
+        } else {
+            temPermissao = licao.modulo.turma.professor_id === usuarioId || tipoUsuario === 'desenvolvedor';
+        }
+
+        if (!temPermissao) {
             return { success: false, message: 'Lição não encontrada' };
         }
 

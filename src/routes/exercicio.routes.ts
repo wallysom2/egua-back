@@ -4,6 +4,9 @@ import { exercicioSchema } from '../schema/exercicio.schema.js';
 import {
   listarExercicios,
   buscarExercicioPorId,
+  buscarQuestoesDoExercicio,
+  adicionarQuestaoAoExercicio,
+  removerQuestaoDoExercicio,
   criarExercicio,
   atualizarExercicio,
   deletarExercicio,
@@ -12,10 +15,13 @@ import {
 
 const router = express.Router();
 
-router.get('/', listarExercicios as RequestHandler); // Adicionar ?linguagemId=X para filtrar
+router.get('/', listarExercicios as RequestHandler);
 router.get('/:id', buscarExercicioPorId as RequestHandler);
+router.get('/:id/questoes', buscarQuestoesDoExercicio as RequestHandler);
+router.post('/:id/questoes', adicionarQuestaoAoExercicio as RequestHandler);
+router.delete('/:id/questoes/:questaoId', removerQuestaoDoExercicio as RequestHandler);
 router.post('/', [validateRequest(exercicioSchema), criarExercicio] as RequestHandler[]);
-router.post('/:id/submit', submeterExercicio as RequestHandler); // Submeter/finalizar exercício
+router.post('/:id/submit', submeterExercicio as RequestHandler);
 router.put('/:id', [validateRequest(exercicioSchema), atualizarExercicio] as RequestHandler[]);
 router.delete('/:id', [deletarExercicio] as RequestHandler[]);
 

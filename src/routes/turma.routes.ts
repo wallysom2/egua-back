@@ -1,10 +1,28 @@
 import { Router } from 'express';
 import {
     autorizarProfessorOuDesenvolvedor,
+    autorizarTipos,
 } from '../middlewares/auth.middleware.js';
 import * as turmaController from '../controllers/turma.controller.js';
 
 const router = Router();
+
+// =============================================
+// ROTAS PARA TRILHA INICIAL (TURMA PADRÃO)
+// =============================================
+
+// Obter trilha inicial do aluno (turma padrão com progresso)
+router.get('/trilha-inicial', turmaController.obterTrilhaInicial);
+
+// Obter informações da turma padrão
+router.get('/padrao', turmaController.obterTurmaPadrao);
+
+// Definir turma como padrão (apenas desenvolvedores)
+router.post(
+    '/:id/definir-padrao',
+    autorizarTipos(['desenvolvedor']),
+    turmaController.definirTurmaPadrao
+);
 
 // =============================================
 // ROTAS PÚBLICAS PARA ALUNOS

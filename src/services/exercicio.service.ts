@@ -27,6 +27,73 @@ export async function buscarExercicioPorId(id: string) {
   });
 }
 
+export async function buscarQuestoesDoExercicio(id: string) {
+  const exercicio = await prisma.exercicio.findUnique({
+    where: { id: Number(id) },
+    include: {
+      exercicio_questao: {
+        include: {
+          questao: true
+        },
+        orderBy: { ordem: 'asc' },
+      },
+    },
+  });
+
+  if (!exercicio) return null;
+
+  return exercicio.exercicio_questao.map((eq: { questao: object; ordem: number }) => ({
+    ...eq.questao,
+    ordem: eq.ordem
+  }));
+}
+
+export async function adicionarQuestaoAoExercicio(exercicioId: string, questaoId: number, ordem?: number) {
+  // Verificar se já existe
+  const existe = await prisma.exercicio_questao.findFirst({
+    where: {
+      exercicio_id: Number(exercicioId),
+      questao_id: questaoId
+    }
+  });
+
+  if (existe) {
+    throw new Error('Questão já está vinculada a este exercício');
+  }
+
+  // Calcular ordem se não fornecida
+  let ordemFinal = ordem;
+  if (ordemFinal === undefined) {
+    const ultimaQuestao = await prisma.exercicio_questao.findFirst({
+      where: { exercicio_id: Number(exercicioId) },
+      orderBy: { ordem: 'desc' }
+    });
+    ordemFinal = (ultimaQuestao?.ordem ?? 0) + 1;
+  }
+
+  return await prisma.exercicio_questao.create({
+    data: {
+      exercicio_id: Number(exercicioId),
+      questao_id: questaoId,
+      ordem: ordemFinal
+    },
+    include: {
+      questao: true
+    }
+  });
+}
+
+export async function removerQuestaoDoExercicio(exercicioId: string, questaoId: number) {
+  return await prisma.exercicio_questao.delete({
+    where: {
+      exercicio_id_questao_id: {
+        exercicio_id: Number(exercicioId),
+        questao_id: questaoId
+      }
+    }
+  });
+}
+
 export async function criarExercicio(dados: ExercicioInput) {
   const { questoes, ...dadosExercicio } = dados;
 

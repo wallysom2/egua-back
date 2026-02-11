@@ -142,6 +142,7 @@ model turma {
   codigo_acesso   String            @unique @db.VarChar(8)
   professor_id    String            @db.Uuid
   ativo           Boolean           @default(true)
+  is_padrao       Boolean           @default(false)
   created_at      DateTime          @default(now())
   updated_at      DateTime          @default(now()) @updatedAt
   trilha_modulo   trilha_modulo[]
